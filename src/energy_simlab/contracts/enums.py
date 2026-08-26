@@ -115,6 +115,10 @@ class SnapshotAction(StrEnum):
     REJECTED = "REJECTED"
 
 
+class InterlockReason(StrEnum):
+    UNSUPPORTED_ISLAND_SAFE_ZERO = "UNSUPPORTED_ISLAND_SAFE_ZERO"
+
+
 class EventPhase(StrEnum):
     EXOGENOUS = "EXOGENOUS"
     TOPOLOGY = "TOPOLOGY"
@@ -138,4 +142,3 @@ class TraceRecordKind(StrEnum):
     FIDELITY = "FIDELITY"
     PUBLICATION = "PUBLICATION"
     SNAPSHOT = "SNAPSHOT"
-

@@ -86,3 +86,9 @@ class FallbackBess:
             operating_mode=self.operating_mode,
         )
 
+    def force_safe_zero(self, operating_mode: OperatingMode) -> tuple[float, float]:
+        previous_power = self.applied_power_mw
+        energy_before = self.energy_stored_mwh
+        self.applied_power_mw = 0.0
+        self.operating_mode = operating_mode
+        return previous_power, energy_before

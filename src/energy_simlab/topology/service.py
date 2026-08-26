@@ -16,12 +16,16 @@ from energy_simlab.contracts.records import (
     ConnectedComponentV1,
     QualityV1,
     TerminalV1,
+    TopologyEventV1,
     TopologySnapshotV1,
 )
 
 
 class DeterministicTopologyService:
     source_id = "topology-service"
+
+    def __init__(self) -> None:
+        self._event_sequence = 0
 
     def recompute(self, topology: TopologySnapshotV1, logical_tick: int) -> TopologySnapshotV1:
         bus_by_id = {bus.id: bus for bus in topology.buses}
@@ -83,6 +87,78 @@ class DeterministicTopologyService:
             quality=quality,
         )
 
+    def open_pcc(
+        self,
+        topology: TopologySnapshotV1,
+        *,
+        logical_tick: int,
+        correlation_id: str,
+        causation_id: str,
+    ) -> tuple[TopologySnapshotV1, TopologyEventV1]:
+        branches: list[BranchV1] = []
+        pcc_before: BranchV1 | None = None
+        for branch in topology.branches:
+            if branch.id == "PCC":
+                pcc_before = branch
+                branches.append(
+                    BranchV1(
+                        id=branch.id,
+                        from_bus_id=branch.from_bus_id,
+                        to_bus_id=branch.to_bus_id,
+                        requested_state=BranchState.OPEN,
+                        actual_state=BranchState.OPEN,
+                        state_sequence=branch.state_sequence + 1,
+                    )
+                )
+            else:
+                branches.append(branch)
+        if pcc_before is None:
+            raise ValueError("topology has no PCC branch")
+        if pcc_before.actual_state is BranchState.OPEN:
+            raise ValueError("PCC is already open")
+
+        next_version = topology.topology_version + 1
+        unresolved = TopologySnapshotV1(
+            id=f"TOPOLOGY-INPUT-{next_version:08d}",
+            source_id=self.source_id,
+            logical_tick=logical_tick,
+            sequence=topology.sequence,
+            topology_version=next_version,
+            buses=topology.buses,
+            branches=tuple(sorted(branches, key=lambda item: item.id)),
+            terminals=topology.terminals,
+            components=(),
+            quality=topology.quality,
+        )
+        updated = self.recompute(unresolved, logical_tick)
+        local_component = next(item for item in updated.components if "LOCAL" in item.bus_ids)
+        affected_ids = tuple(
+            sorted(
+                {item.id for item in topology.components}
+                | {item.id for item in updated.components}
+            )
+        )
+        self._event_sequence += 1
+        event = TopologyEventV1(
+            id=f"TOPOLOGY-EVENT-{self._event_sequence:08d}",
+            source_id=self.source_id,
+            logical_tick=logical_tick,
+            sequence=self._event_sequence,
+            branch_id="PCC",
+            old_requested_state=pcc_before.requested_state,
+            new_requested_state=BranchState.OPEN,
+            old_actual_state=pcc_before.actual_state,
+            new_actual_state=BranchState.OPEN,
+            trigger_kind="COMMAND",
+            correlation_id=correlation_id,
+            causation_id=causation_id,
+            topology_version_before=topology.topology_version,
+            topology_version_after=updated.topology_version,
+            affected_component_ids=affected_ids,
+            energization=local_component.energization,
+        )
+        return updated, event
+
 
 def reference_topology(*, logical_tick: int = 0) -> TopologySnapshotV1:
     quality = QualityV1(
@@ -121,4 +197,3 @@ def reference_topology(*, logical_tick: int = 0) -> TopologySnapshotV1:
         quality=quality,
     )
     return DeterministicTopologyService().recompute(unresolved, logical_tick)
-

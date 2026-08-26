@@ -12,6 +12,7 @@ from energy_simlab.contracts.enums import (
     EnergizationState,
     EventPhase,
     FidelityResult,
+    InterlockReason,
     OperatingMode,
     QualityReason,
     QualityValidity,
@@ -33,6 +34,7 @@ from energy_simlab.contracts.records import (
     ConnectedComponentV1,
     ControllerSnapshotV1,
     FidelityEventV1,
+    InterlockEventV1,
     MacroPublicationV1,
     ModelHandoffV1,
     ModelRegistrySnapshotV1,
@@ -246,6 +248,23 @@ def sample_records() -> tuple[VersionedV1, ...]:
         power_discontinuity_mw=0.0,
         detail="fallback-to-detailed activation succeeded",
     )
+    interlock_event = InterlockEventV1(
+        id="INTERLOCK-EVENT-001",
+        source_id="operating-context",
+        logical_tick=80,
+        sequence=1,
+        target_id="BESS",
+        reason=InterlockReason.UNSUPPORTED_ISLAND_SAFE_ZERO,
+        previous_target_power_mw=-1.0,
+        new_target_power_mw=0.0,
+        previous_applied_power_mw=-0.5,
+        new_applied_power_mw=0.0,
+        energy_before_mwh=1.0,
+        energy_after_mwh=1.0,
+        correlation_id="CMD-PCC-001",
+        causation_id="TOPOLOGY-EVENT-001",
+        topology_version=1,
+    )
     snapshot_event = SnapshotLifecycleEventV1(
         id="SNAPSHOT-EVENT-001",
         source_id="snapshot-service",
@@ -422,6 +441,7 @@ def sample_records() -> tuple[VersionedV1, ...]:
         source_counter,
         handoff,
         fidelity_event,
+        interlock_event,
         snapshot_event,
         publication,
         configuration,
@@ -444,4 +464,3 @@ def sample_records() -> tuple[VersionedV1, ...]:
     if missing:
         raise AssertionError(f"sample registry is missing: {sorted(item.__name__ for item in missing)}")
     return tuple(by_type[domain_type] for domain_type in V1_DOMAIN_TYPES)
-

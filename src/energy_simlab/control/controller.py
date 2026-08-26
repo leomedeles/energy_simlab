@@ -44,3 +44,7 @@ class PowerController:
             applied_power_mw=applied_power_mw,
         )
 
+    def engage_safe_zero_interlock(self) -> float:
+        previous_target = self.target_power_mw
+        self.target_power_mw = 0.0
+        return previous_target

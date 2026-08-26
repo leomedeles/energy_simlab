@@ -59,6 +59,8 @@ class ActivePowerBalance(Protocol):
         load_mw: float,
         bess_ac_power_mw: float,
         topology: TopologySnapshotV1,
+        correlation_id: str | None = None,
+        causation_id: str | None = None,
     ) -> ActivePowerBalanceV1: ...
 
 

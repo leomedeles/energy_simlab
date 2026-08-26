@@ -22,6 +22,7 @@ from .enums import (
     EnergizationState,
     EventPhase,
     FidelityResult,
+    InterlockReason,
     OperatingMode,
     QualityReason,
     QualityValidity,
@@ -368,6 +369,8 @@ class ActivePowerBalanceV1(VersionedV1):
     island_imbalance_mw: float | None
     energization: EnergizationState
     quality: QualityV1
+    correlation_id: str | None = None
+    causation_id: str | None = None
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -386,6 +389,11 @@ class ActivePowerBalanceV1(VersionedV1):
                 require_finite(value, field)
         if (self.grid_import_mw is None) == (self.island_imbalance_mw is None):
             raise ValueError("exactly one balance result must be present")
+        if (self.correlation_id is None) != (self.causation_id is None):
+            raise ValueError("balance correlation and causation must be present together")
+        if self.correlation_id is not None:
+            require_text(self.correlation_id, "correlation_id")
+            require_text(self.causation_id or "", "causation_id")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -462,6 +470,40 @@ class FidelityEventV1(IdentifiedRecordV1):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class InterlockEventV1(IdentifiedRecordV1):
+    target_id: str
+    reason: InterlockReason
+    previous_target_power_mw: float
+    new_target_power_mw: float
+    previous_applied_power_mw: float
+    new_applied_power_mw: float
+    energy_before_mwh: float
+    energy_after_mwh: float
+    correlation_id: str
+    causation_id: str
+    topology_version: int
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        for field, value in (
+            ("target_id", self.target_id),
+            ("correlation_id", self.correlation_id),
+            ("causation_id", self.causation_id),
+        ):
+            require_text(value, field)
+        for field, value in (
+            ("previous_target_power_mw", self.previous_target_power_mw),
+            ("new_target_power_mw", self.new_target_power_mw),
+            ("previous_applied_power_mw", self.previous_applied_power_mw),
+            ("new_applied_power_mw", self.new_applied_power_mw),
+            ("energy_before_mwh", self.energy_before_mwh),
+            ("energy_after_mwh", self.energy_after_mwh),
+        ):
+            require_finite(value, field)
+        require_non_negative(self.topology_version, "topology_version")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class SnapshotLifecycleEventV1(IdentifiedRecordV1):
     snapshot_id: str
     action: SnapshotAction
@@ -481,7 +523,12 @@ class SnapshotLifecycleEventV1(IdentifiedRecordV1):
 
 
 DiscreteRecordV1: TypeAlias = (
-    AcknowledgementV1 | AlarmEventV1 | TopologyEventV1 | FidelityEventV1 | SnapshotLifecycleEventV1
+    AcknowledgementV1
+    | AlarmEventV1
+    | TopologyEventV1
+    | FidelityEventV1
+    | InterlockEventV1
+    | SnapshotLifecycleEventV1
 )
 
 
@@ -856,6 +903,7 @@ V1_DOMAIN_TYPES: tuple[type[VersionedV1], ...] = (
     SourceCounterV1,
     ModelHandoffV1,
     FidelityEventV1,
+    InterlockEventV1,
     SnapshotLifecycleEventV1,
     MacroPublicationV1,
     SimulationConfigV1,

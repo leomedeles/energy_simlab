@@ -20,6 +20,8 @@ class AlgebraicActivePowerBalance:
         load_mw: float,
         bess_ac_power_mw: float,
         topology: TopologySnapshotV1,
+        correlation_id: str | None = None,
+        causation_id: str | None = None,
     ) -> ActivePowerBalanceV1:
         local_components = [component for component in topology.components if "LOCAL" in component.bus_ids]
         if len(local_components) != 1:
@@ -41,6 +43,8 @@ class AlgebraicActivePowerBalance:
                 island_imbalance_mw=None,
                 energization=energization,
                 quality=quality,
+                correlation_id=correlation_id,
+                causation_id=causation_id,
             )
 
         quality = QualityV1(
@@ -58,5 +62,6 @@ class AlgebraicActivePowerBalance:
             island_imbalance_mw=bess_ac_power_mw - load_mw,
             energization=energization,
             quality=quality,
+            correlation_id=correlation_id,
+            causation_id=causation_id,
         )
-

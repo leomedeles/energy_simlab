@@ -10,7 +10,7 @@ Stage C — Feature Architecture
 |---|---|---|
 | Gate A — learning charter | Approved by human project owner | `NODE_CONTEXT.md` |
 | Gate B — research | Approved by human project owner on 2026-08-26 | `RESEARCH_REPORT.md` |
-| Gate C — feature architecture | Awaiting human approval | Draft `FEATURE_CONTEXT.md` to be reviewed |
+| Gate C — feature architecture | Awaiting human approval | Draft `FEATURE_CONTEXT.md` |
 | Implementation milestones | Blocked pending Gate C approval | No approved feature context |
 | Gate D — validation | Blocked | No implementation |
 
@@ -21,10 +21,11 @@ Stage C — Feature Architecture
 - [x] Produced `RESEARCH_REPORT.md`.
 - [x] Gate B approved by the human project owner on 2026-08-26.
 - [x] Entered Stage C — Feature Architecture.
+- [x] Replaced the blocked `FEATURE_CONTEXT.md` placeholder with a Stage C draft and Gate C checklist.
 
 ## Active work
 
-Draft `FEATURE_CONTEXT.md` from the approved Gate B evidence. The draft is non-prescriptive until Gate C is approved by the human project owner.
+Human review of the draft `FEATURE_CONTEXT.md`. The draft remains non-prescriptive until Gate C is approved by the human project owner.
 
 ## Test evidence
 
@@ -34,7 +35,8 @@ No implementation tests exist. Stage C authorizes architecture work only.
 
 - Gate B evidence: `RESEARCH_REPORT.md`.
 - The substantive content of the approved research report remains unchanged.
+- No accepted ADR existed when the feature context was drafted; the draft requires the Gate C-approved decisions to be transcribed into `ADR-0001` before behavioural implementation.
 
 ## Next permitted action
 
-Complete the draft `FEATURE_CONTEXT.md` and submit its Gate C checklist for human review. Do not create an implementation branch or write implementation code before Gate C approval.
+Human Gate C review and approval or requested revision of `FEATURE_CONTEXT.md`. Do not create the implementation branch or write implementation code before Gate C approval is recorded.

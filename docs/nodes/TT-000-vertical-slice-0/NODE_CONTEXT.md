@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed — awaiting Gate A approval
+Approved
 
 This charter defines the learning problem. It does not approve implementation choices, equations, time steps or technology selections.
 

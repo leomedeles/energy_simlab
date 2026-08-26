@@ -670,19 +670,19 @@ These are non-binding candidates, receive no permanent node ID here and must not
 
 The human project owner should approve or reject each item explicitly:
 
-- [ ] The draft status is understood: TT-000 remains neither active, implemented, validated nor unlocked.
-- [ ] The proposed branch feature/TT-000-vertical-slice-0 is approved, to be created only after Gate C is recorded.
-- [ ] The learning outcomes, scope and explicit non-goals are approved.
-- [ ] The fallback and detailed BESS equations, signs, limits, synthetic fixture and validity domain are approved.
-- [ ] The 1 s macro / 0.1 s child periods, 10:1 coupling and provisional half-step tolerances are approved.
-- [ ] The ordered phases, topology-before-command rule and command-authority policy are approved.
-- [ ] The unsupported-island safe-zero policy, algebraic imbalance nonclaim and alarm definition are approved.
-- [ ] The one-way fallback-to-detailed transition and continuity tolerances are approved.
-- [ ] The package boundaries, standard-library domain contracts, Pydantic edge DTOs and dependency direction are approved.
-- [ ] The V1 schema ownership, command lifecycle, deterministic IDs and viewer queue/loss policy are approved.
-- [ ] The snapshot inventory, python-json-v1 canonicalization, SHA-256 checksum and same-profile replay guarantee are approved.
-- [ ] The seven sequential implementation milestones and every milestone test gate are approved.
-- [ ] The deterministic reference scenario, identical replay and alternative continuation are approved.
-- [ ] The node-specific Definition of Done, documentation duties, risks, stop conditions and rollback policy are approved.
-- [ ] Gate C approval also authorizes ADR-0001 to transcribe these approved time, event-ordering, command-authority and snapshot decisions without introducing new choices.
-- [ ] Implementation remains blocked until this checklist is approved by the human project owner and that approval is recorded in PROGRESS.md.
+- [x] The draft status is understood: TT-000 remains neither active, implemented, validated nor unlocked.
+- [x] The proposed branch feature/TT-000-vertical-slice-0 is approved, to be created only after Gate C is recorded.
+- [x] The learning outcomes, scope and explicit non-goals are approved.
+- [x] The fallback and detailed BESS equations, signs, limits, synthetic fixture and validity domain are approved.
+- [x] The 1 s macro / 0.1 s child periods, 10:1 coupling and provisional half-step tolerances are approved.
+- [x] The ordered phases, topology-before-command rule and command-authority policy are approved.
+- [x] The unsupported-island safe-zero policy, algebraic imbalance nonclaim and alarm definition are approved.
+- [x] The one-way fallback-to-detailed transition and continuity tolerances are approved.
+- [x] The package boundaries, standard-library domain contracts, Pydantic edge DTOs and dependency direction are approved.
+- [x] The V1 schema ownership, command lifecycle, deterministic IDs and viewer queue/loss policy are approved.
+- [x] The snapshot inventory, python-json-v1 canonicalization, SHA-256 checksum and same-profile replay guarantee are approved.
+- [x] The eight (0 - 7) sequential implementation milestones and every milestone test gate are approved.
+- [x] The deterministic reference scenario, identical replay and alternative continuation are approved.
+- [x] The node-specific Definition of Done, documentation duties, risks, stop conditions and rollback policy are approved.
+- [x] Gate C approval also authorizes ADR-0001 to transcribe these approved time, event-ordering, command-authority and snapshot decisions without introducing new choices.
+- [x] Implementation remains blocked until this checklist is approved by the human project owner and that approval is recorded in PROGRESS.md.

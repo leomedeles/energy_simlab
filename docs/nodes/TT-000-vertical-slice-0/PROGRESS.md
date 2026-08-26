@@ -11,13 +11,13 @@ Stage D — Milestone Implementation
 | Gate A — learning charter | Approved by human project owner | `NODE_CONTEXT.md` |
 | Gate B — research | Approved by human project owner on 2026-08-26 | `RESEARCH_REPORT.md` |
 | Gate C — feature architecture | Approved by human project owner on 2026-08-26 | `FEATURE_CONTEXT.md` |
-| Implementation milestones | M0–M3 passed; M4 in progress | Approved `FEATURE_CONTEXT.md` and milestone evidence below |
+| Implementation milestones | M0–M4 passed; M5 in progress | Approved `FEATURE_CONTEXT.md` and milestone evidence below |
 | Gate D — validation | Blocked pending completed implementation and validation | No validation review |
 
 ## Implementation state
 
 - Implementation branch: `feature/TT-000-vertical-slice-0`
-- Active milestone: M4 — Topology event and alarm lifecycle
+- Active milestone: M5 — Snapshot and branching replay
 - Implementation status: In progress
 
 ## Completed
@@ -35,10 +35,11 @@ Stage D — Milestone Implementation
 - [x] M1 — Deterministic kernel passed its approved gate.
 - [x] M2 — Grid-connected fallback slice passed its approved gate.
 - [x] M3 — Detailed multi-rate model and activation passed its approved gate.
+- [x] M4 — Topology event and alarm lifecycle passed its approved gate.
 
 ## Active work
 
-M4 — Topology event and alarm lifecycle. Its prerequisite M3 passed and is recorded below.
+M5 — Snapshot and branching replay. Its prerequisite M4 passed and is recorded below.
 
 ## Test evidence
 
@@ -162,6 +163,33 @@ Gate coverage:
 - Successful activation preserves exact lineage and E/SoC/P within 1e-12; failed activation retains the fallback as active and leaves captured registry/model state unchanged.
 - Strengthened architecture tests enforce that kernel, model, control, topology, balance, alarm and snapshot packages import only canonical contracts across domain boundaries.
 
+### M4 — Topology event and alarm lifecycle
+
+- Status: Passed
+- Implementation commit: `ecd98a8` (`feat(TT-000): implement M4 island and alarm lifecycle`)
+
+Commands and results:
+
+1. `.\.venv\Scripts\python.exe -m pytest tests/m4 tests/m3 tests/m2 tests/m1 tests/m0 -q`
+   - Passed: 149 tests in 2.10 s, including all M0–M3 regressions.
+2. `.\.venv\Scripts\python.exe -m pytest -q` after adding explicit imbalance correlation/causation.
+   - Passed: 149 tests in 1.54 s.
+3. `.\.venv\Scripts\python.exe -m pip check`
+   - Passed: no broken requirements.
+4. `.\.venv\Scripts\python.exe -m compileall -q src tests`
+   - Passed.
+5. `git diff --check`
+   - Passed.
+
+Gate coverage:
+
+- Closed components are `(GRID, LOCAL)`; opening PCC produces exact `GRID@1` and `LOCAL@1` components and topology version 1.
+- A simultaneous dispatch is validated after topology/operating-context changes: an old expected topology version is rejected, and otherwise unsupported mode is rejected with `TARGET_MODE_UNAVAILABLE`.
+- Safe-zero sets controller target and model-applied power to 0 MW without changing stored energy at the event boundary.
+- With a 0.6 MW load, island imbalance is exactly -0.6 MW with `UNCERTAIN/SIMPLIFIED_ISLAND_PROXY` quality.
+- The topology event, typed interlock event, balance and alarm occurrence share explicit correlation/causation lineage.
+- Alarm occurrence, acknowledge-while-active, return/close, clear-before-acknowledge and acknowledge/close sequences are exact on separate active/acknowledged axes.
+
 ## Decisions and deviations
 
 - Gate B evidence: `RESEARCH_REPORT.md`.
@@ -177,8 +205,10 @@ Gate coverage:
 - The fallback BESS computes energy-feasible power before integration and does not repair energy by post-step clipping.
 - The detailed endpoint is selected from the intersection of rating, ramp and energy-feasible constraints before trapezoidal energy integration.
 - The model registry constructs and validates a detailed candidate before atomically changing the active pointer; only fallback-to-detailed activation exists.
+- M4 adds the approved explicit safe-zero publication as `InterlockEventV1`; it carries target/applied power and energy before/after plus topology/correlation lineage.
+- Alarm state retains occurrence identity after return until acknowledgement and emits `CLOSED` only when both condition-clear and acknowledged are true.
 - No architecture or scope deviations recorded. The only failed test to date was the corrected M0 whitespace-sensitive documentation assertion described above.
 
 ## Next permitted action
 
-Implement only M4, run every M4 gate test plus applicable M0–M3 regressions, and continue to M5 only if the M4 gate passes.
+Implement only M5, run every M5 gate test plus applicable M0–M4 regressions, and continue to M6 only if the M5 gate passes.

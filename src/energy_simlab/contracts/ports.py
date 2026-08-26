@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from .enums import OperatingMode
 from .records import (
     ActivePowerBalanceV1,
     CommandV1,
@@ -12,6 +13,16 @@ from .records import (
     TopologySnapshotV1,
     TraceEntryV1,
 )
+
+
+class BessPowerModel(Protocol):
+    model_id: str
+    model_version: str
+    operating_mode: OperatingMode
+
+    def static_power_range_mw(self) -> tuple[float, float]: ...
+
+    def feasible_power_range_mw(self, duration_seconds: float) -> tuple[float, float]: ...
 
 
 class CommandIngress(Protocol):
@@ -53,4 +64,3 @@ class ActivePowerBalance(Protocol):
 
 class SnapshotAssembler(Protocol):
     def capture(self) -> SnapshotEnvelopeV1: ...
-

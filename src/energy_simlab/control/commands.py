@@ -11,9 +11,8 @@ from energy_simlab.contracts.enums import (
     OperatingMode,
     Unit,
 )
+from energy_simlab.contracts.ports import BessPowerModel
 from energy_simlab.contracts.records import AcknowledgementV1, CommandV1
-from energy_simlab.kernel.ids import DeterministicIdSource
-from energy_simlab.models.bess import FallbackBess
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -35,7 +34,7 @@ class CommandValidator:
     def __init__(self) -> None:
         self._receipts: dict[str, _Receipt] = {}
         self._source_sequences: dict[str, int] = {}
-        self._ids = DeterministicIdSource()
+        self._acknowledgement_sequence = 0
 
     def validate_power_request(
         self,
@@ -43,7 +42,7 @@ class CommandValidator:
         *,
         current_tick: int,
         topology_version: int,
-        model: FallbackBess,
+        model: BessPowerModel,
         feasibility_duration_seconds: float,
     ) -> CommandDecision:
         previous = self._receipts.get(command.id)
@@ -105,7 +104,9 @@ class CommandValidator:
                         reason = AcknowledgementReason.ACCEPTED
                         detail = "power request accepted"
 
-        acknowledgement_id, acknowledgement_sequence = self._ids.next_id(self.source_id, "ACK")
+        self._acknowledgement_sequence += 1
+        acknowledgement_sequence = self._acknowledgement_sequence
+        acknowledgement_id = f"ACK-COMMAND-VALIDATOR-{acknowledgement_sequence:08d}"
         acknowledgement = AcknowledgementV1(
             id=acknowledgement_id,
             source_id=self.source_id,

@@ -55,4 +55,3 @@ class BessStepResult:
     stored_energy_change_mwh: float
     energy_residual_mwh: float
     limited: bool
-

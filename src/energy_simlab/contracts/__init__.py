@@ -3,6 +3,7 @@
 from .enums import *
 from .ports import (
     ActivePowerBalance,
+    BessPowerModel,
     CommandIngress,
     Pacer,
     PublicationSink,
@@ -17,6 +18,7 @@ from .validation import SCHEMA_VERSION
 __all__ = [
     "SCHEMA_VERSION",
     "ActivePowerBalance",
+    "BessPowerModel",
     "CommandIngress",
     "Pacer",
     "PublicationSink",
@@ -25,4 +27,3 @@ __all__ = [
     "TopologyService",
     "TraceRecorder",
 ]
-

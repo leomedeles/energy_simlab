@@ -2,17 +2,19 @@
 
 ## 1. Status and Gate C approval state
 
-Draft — Stage C Feature Architecture, awaiting Gate C human approval.
+Approved — Gate C approved; prescriptive for Stage D milestone implementation.
 
 - Gate A: approved by the human project owner.
 - Gate B: approved by the human project owner on 2026-08-26.
 - Gate B evidence: RESEARCH_REPORT.md.
-- Gate C: awaiting human approval.
-- Implementation: blocked pending Gate C approval.
-- Git feature branch: proposed below but not created.
-- Node state: neither active, implemented, validated nor unlocked.
+- Gate C: Approved.
+- Approved by: Human project owner.
+- Approval date: 2026-08-26.
+- Implementation: Stage D authorized on the approved feature branch.
+- Git feature branch: feature/TT-000-vertical-slice-0.
+- Node state: implementation in progress; neither validated nor unlocked.
 
-This file is an architecture proposal. It becomes prescriptive only when the human project owner records Gate C approval. Approval of this draft authorizes Stage D milestone implementation on the named feature branch; it does not validate the node or approve Gate D. The substantive content of the approved RESEARCH_REPORT.md must not be changed to make implementation results appear consistent with this specification.
+This file is the approved, prescriptive architecture for Stage D milestone implementation. Gate C approval authorizes implementation on the named feature branch; it does not validate the node or approve Gate D. The substantive content of the approved RESEARCH_REPORT.md must not be changed to make implementation results appear consistent with this specification.
 
 ## 2. Node identity and proposed Git branch
 
@@ -668,10 +670,10 @@ These are non-binding candidates, receive no permanent node ID here and must not
 
 ## Gate C checklist for human approval
 
-The human project owner should approve or reject each item explicitly:
+The human project owner approved each item explicitly on 2026-08-26:
 
-- [x] The draft status is understood: TT-000 remains neither active, implemented, validated nor unlocked.
-- [x] The proposed branch feature/TT-000-vertical-slice-0 is approved, to be created only after Gate C is recorded.
+- [x] The approved status is understood: TT-000 enters Stage D but remains neither validated nor unlocked.
+- [x] The branch feature/TT-000-vertical-slice-0 is approved for Stage D implementation.
 - [x] The learning outcomes, scope and explicit non-goals are approved.
 - [x] The fallback and detailed BESS equations, signs, limits, synthetic fixture and validity domain are approved.
 - [x] The 1 s macro / 0.1 s child periods, 10:1 coupling and provisional half-step tolerances are approved.
@@ -685,4 +687,4 @@ The human project owner should approve or reject each item explicitly:
 - [x] The deterministic reference scenario, identical replay and alternative continuation are approved.
 - [x] The node-specific Definition of Done, documentation duties, risks, stop conditions and rollback policy are approved.
 - [x] Gate C approval also authorizes ADR-0001 to transcribe these approved time, event-ordering, command-authority and snapshot decisions without introducing new choices.
-- [x] Implementation remains blocked until this checklist is approved by the human project owner and that approval is recorded in PROGRESS.md.
+- [x] Gate C is approved by the human project owner on 2026-08-26 and recorded in PROGRESS.md.

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools==84.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "energy-simlab"
+version = "0.1.0"
+description = "Deterministic hierarchical energy co-simulation learning laboratory"
+readme = "README.md"
+requires-python = ">=3.14.7,<3.15"
+license = "MIT"
+dependencies = [
+    "pydantic==2.13.4",
+]
+
+[project.optional-dependencies]
+api = [
+    "fastapi==0.141.1",
+    "uvicorn==0.52.4",
+]
+test = [
+    "pytest==9.1.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+pythonpath = ["src"]
+testpaths = ["tests"]
+

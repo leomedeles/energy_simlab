@@ -1,0 +1,2 @@
+"""Replaceable physical-model implementations."""
+

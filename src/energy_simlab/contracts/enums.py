@@ -133,6 +133,22 @@ class EventPhase(StrEnum):
     SNAPSHOT = "SNAPSHOT"
 
 
+def event_phase_priority(phase: EventPhase) -> int:
+    return (
+        EventPhase.EXOGENOUS,
+        EventPhase.TOPOLOGY,
+        EventPhase.OPERATING_CONTEXT,
+        EventPhase.FIDELITY,
+        EventPhase.COMMAND,
+        EventPhase.CONTROL,
+        EventPhase.MODEL_ADVANCE,
+        EventPhase.AGGREGATION,
+        EventPhase.ALARM,
+        EventPhase.PUBLICATION,
+        EventPhase.SNAPSHOT,
+    ).index(phase) * 10 + 10
+
+
 class TraceRecordKind(StrEnum):
     COMMAND = "COMMAND"
     ACKNOWLEDGEMENT = "ACKNOWLEDGEMENT"

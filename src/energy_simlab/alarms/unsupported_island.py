@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from energy_simlab.contracts.enums import AlarmSeverity, AlarmTransition
-from energy_simlab.contracts.records import AlarmEventV1, AlarmStateV1
+from energy_simlab.contracts.records import AlarmEventV1, AlarmRuntimeSnapshotV1, AlarmStateV1
 
 
 class UnsupportedIslandAlarm:
@@ -21,6 +21,28 @@ class UnsupportedIslandAlarm:
     @property
     def state(self) -> AlarmStateV1 | None:
         return self._state
+
+    def export_snapshot(self) -> AlarmRuntimeSnapshotV1:
+        return AlarmRuntimeSnapshotV1(
+            states=() if self._state is None else (self._state,),
+            event_sequence=self._event_sequence,
+            next_occurrence_sequence=self._occurrence_sequence,
+        )
+
+    @classmethod
+    def from_snapshot(
+        cls,
+        snapshot: AlarmRuntimeSnapshotV1,
+        *,
+        threshold_mw: float = 0.05,
+    ) -> "UnsupportedIslandAlarm":
+        if len(snapshot.states) > 1:
+            raise ValueError("TT-000 supports one alarm condition state")
+        alarm = cls(threshold_mw=threshold_mw)
+        alarm._state = None if not snapshot.states else snapshot.states[0]
+        alarm._event_sequence = snapshot.event_sequence
+        alarm._occurrence_sequence = snapshot.next_occurrence_sequence
+        return alarm
 
     def evaluate(
         self,

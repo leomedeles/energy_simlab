@@ -29,6 +29,7 @@ from .enums import (
     SnapshotAction,
     TraceRecordKind,
     Unit,
+    event_phase_priority,
 )
 from .validation import (
     SCHEMA_VERSION,
@@ -672,6 +673,9 @@ class SourceCounterV1(VersionedV1):
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ScheduledEventSnapshotV1(VersionedV1):
     event_id: str
+    source_id: str
+    event_kind: str
+    subject_id: str
     logical_tick: int
     phase: EventPhase
     source_order: int
@@ -682,6 +686,9 @@ class ScheduledEventSnapshotV1(VersionedV1):
     def __post_init__(self) -> None:
         super().__post_init__()
         require_text(self.event_id, "event_id")
+        require_text(self.source_id, "source_id")
+        require_text(self.event_kind, "event_kind")
+        require_text(self.subject_id, "subject_id")
         require_non_negative(self.logical_tick, "logical_tick")
         require_non_negative(self.source_order, "source_order")
         require_non_negative(self.insertion_sequence, "insertion_sequence")
@@ -691,25 +698,36 @@ class ScheduledEventSnapshotV1(VersionedV1):
 class SchedulerSnapshotV1(VersionedV1):
     current_tick: int
     current_phase: EventPhase | None
+    closed_through_tick: int
     insertion_sequence: int
     publication_sequence: int
     source_counters: tuple[SourceCounterV1, ...]
     pending_events: tuple[ScheduledEventSnapshotV1, ...]
+    cancelled_event_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
         super().__post_init__()
         require_non_negative(self.current_tick, "current_tick")
+        if self.closed_through_tick < -1:
+            raise ValueError("closed_through_tick must be -1 or non-negative")
         require_non_negative(self.insertion_sequence, "insertion_sequence")
         require_non_negative(self.publication_sequence, "publication_sequence")
         source_ids = tuple(item.source_id for item in self.source_counters)
         if source_ids != tuple(sorted(set(source_ids))):
             raise ValueError("source counters must be sorted and unique")
         keys = tuple(
-            (item.logical_tick, item.phase.value, item.source_order, item.insertion_sequence)
+            (
+                item.logical_tick,
+                event_phase_priority(item.phase),
+                item.source_order,
+                item.insertion_sequence,
+            )
             for item in self.pending_events
         )
         if keys != tuple(sorted(keys)):
             raise ValueError("pending events must be in canonical semantic order")
+        if self.cancelled_event_ids != tuple(sorted(set(self.cancelled_event_ids))):
+            raise ValueError("cancelled event IDs must be sorted and unique")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -749,10 +767,12 @@ class BessModelStateV1(VersionedV1):
 class ModelRegistrySnapshotV1(VersionedV1):
     active_model_id: str
     model_states: tuple[BessModelStateV1, ...]
+    transition_sequence: int
 
     def __post_init__(self) -> None:
         super().__post_init__()
         require_text(self.active_model_id, "active_model_id")
+        require_non_negative(self.transition_sequence, "transition_sequence")
         ids = tuple(item.model_id for item in self.model_states)
         if ids != tuple(sorted(set(ids))):
             raise ValueError("model states must be sorted by unique model_id")
@@ -778,11 +798,13 @@ class ControllerSnapshotV1(VersionedV1):
     accepted_power_mw: float
     target_power_mw: float
     interlock_active: bool
+    acknowledgement_sequence: int
     receipts: tuple[CommandReceiptV1, ...]
     source_sequences: tuple[SourceCounterV1, ...]
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        require_non_negative(self.acknowledgement_sequence, "acknowledgement_sequence")
         for field, value in (
             ("requested_power_mw", self.requested_power_mw),
             ("accepted_power_mw", self.accepted_power_mw),
@@ -806,10 +828,12 @@ class TopologyRuntimeSnapshotV1(VersionedV1):
 @dataclass(frozen=True, slots=True, kw_only=True)
 class AlarmRuntimeSnapshotV1(VersionedV1):
     states: tuple[AlarmStateV1, ...]
+    event_sequence: int
     next_occurrence_sequence: int
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        require_non_negative(self.event_sequence, "event_sequence")
         require_non_negative(self.next_occurrence_sequence, "next_occurrence_sequence")
 
 

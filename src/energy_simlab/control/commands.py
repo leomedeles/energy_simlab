@@ -12,7 +12,12 @@ from energy_simlab.contracts.enums import (
     Unit,
 )
 from energy_simlab.contracts.ports import BessPowerModel
-from energy_simlab.contracts.records import AcknowledgementV1, CommandV1
+from energy_simlab.contracts.records import (
+    AcknowledgementV1,
+    CommandReceiptV1,
+    CommandV1,
+    SourceCounterV1,
+)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -35,6 +40,51 @@ class CommandValidator:
         self._receipts: dict[str, _Receipt] = {}
         self._source_sequences: dict[str, int] = {}
         self._acknowledgement_sequence = 0
+
+    @property
+    def acknowledgement_sequence(self) -> int:
+        return self._acknowledgement_sequence
+
+    def export_receipts(self) -> tuple[CommandReceiptV1, ...]:
+        return tuple(
+            CommandReceiptV1(
+                command=receipt.command,
+                acknowledgement=receipt.decision.acknowledgement,
+                executed=receipt.decision.acknowledgement.status
+                in {AcknowledgementStatus.ACCEPTED, AcknowledgementStatus.ACCEPTED_WITH_LIMIT},
+            )
+            for _, receipt in sorted(self._receipts.items())
+        )
+
+    def export_source_sequences(self) -> tuple[SourceCounterV1, ...]:
+        return tuple(
+            SourceCounterV1(source_id=source_id, value=value)
+            for source_id, value in sorted(self._source_sequences.items())
+        )
+
+    @classmethod
+    def from_snapshot(
+        cls,
+        *,
+        receipts: tuple[CommandReceiptV1, ...],
+        source_sequences: tuple[SourceCounterV1, ...],
+        acknowledgement_sequence: int,
+    ) -> "CommandValidator":
+        validator = cls()
+        validator._acknowledgement_sequence = acknowledgement_sequence
+        validator._source_sequences = {item.source_id: item.value for item in source_sequences}
+        if len(validator._source_sequences) != len(source_sequences):
+            raise ValueError("duplicate validator source sequence")
+        for receipt in receipts:
+            decision = CommandDecision(
+                acknowledgement=receipt.acknowledgement,
+                accepted_power_mw=receipt.acknowledgement.accepted_value,
+            )
+            validator._receipts[receipt.command.id] = _Receipt(
+                command=receipt.command,
+                decision=decision,
+            )
+        return validator
 
     def validate_power_request(
         self,
@@ -129,5 +179,84 @@ class CommandValidator:
             acknowledgement=acknowledgement,
             accepted_power_mw=accepted,
         )
+        self._receipts[command.id] = _Receipt(command=command, decision=decision)
+        return decision
+
+    def validate_action_request(
+        self,
+        command: CommandV1,
+        *,
+        current_tick: int,
+        topology_version: int,
+        model: BessPowerModel,
+        expected_kind: CommandKind,
+        expected_target_id: str,
+        target_available: bool = True,
+    ) -> CommandDecision:
+        """Validate a non-numeric TT-000 action through the same dedupe lineage."""
+
+        previous = self._receipts.get(command.id)
+        if previous is not None:
+            if previous.command != command:
+                raise ValueError("a command ID cannot be reused with different content")
+            return CommandDecision(
+                acknowledgement=previous.decision.acknowledgement,
+                accepted_power_mw=None,
+                duplicate=True,
+            )
+
+        status = AcknowledgementStatus.REJECTED
+        reason = AcknowledgementReason.INVALID_SCHEMA
+        detail = "unsupported command"
+        last_sequence = self._source_sequences.get(command.source_id, 0)
+        if command.sequence <= last_sequence:
+            reason = AcknowledgementReason.STALE_SEQUENCE
+            detail = "source sequence is not newer than the last observed command"
+        else:
+            self._source_sequences[command.source_id] = command.sequence
+            if command.apply_tick != current_tick or current_tick > command.expiry_tick:
+                reason = AcknowledgementReason.EXPIRED
+                detail = "command is not eligible at this logical boundary"
+            elif command.target_id != expected_target_id:
+                reason = AcknowledgementReason.UNKNOWN_TARGET
+                detail = "command target does not match the requested TT-000 action"
+            elif command.kind is not expected_kind:
+                reason = AcknowledgementReason.INVALID_SCHEMA
+                detail = "command kind does not match the requested TT-000 action"
+            elif command.expected_model_version not in (None, model.model_version):
+                reason = AcknowledgementReason.VERSION_MISMATCH
+                detail = "expected BESS model version does not match"
+            elif command.expected_topology_version not in (None, topology_version):
+                reason = AcknowledgementReason.VERSION_MISMATCH
+                detail = "expected topology version does not match"
+            elif not target_available:
+                reason = AcknowledgementReason.TARGET_MODE_UNAVAILABLE
+                detail = "command target is unavailable in the current operating state"
+            else:
+                status = AcknowledgementStatus.ACCEPTED
+                reason = AcknowledgementReason.ACCEPTED
+                detail = "action request accepted"
+
+        self._acknowledgement_sequence += 1
+        sequence = self._acknowledgement_sequence
+        acknowledgement = AcknowledgementV1(
+            id=f"ACK-COMMAND-VALIDATOR-{sequence:08d}",
+            source_id=self.source_id,
+            logical_tick=current_tick,
+            sequence=sequence,
+            command_id=command.id,
+            correlation_id=command.correlation_id or command.id,
+            target_id=command.target_id,
+            status=status,
+            reason=reason,
+            detail=detail,
+            effective_tick=current_tick,
+            requested_value=None,
+            accepted_value=None,
+            unit=command.unit,
+            model_version=model.model_version,
+            topology_version=topology_version,
+        )
+        decision = CommandDecision(acknowledgement=acknowledgement, accepted_power_mw=None)
         self._receipts[command.id] = _Receipt(command=command, decision=decision)
         return decision

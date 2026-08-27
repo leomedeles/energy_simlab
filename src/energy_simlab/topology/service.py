@@ -24,9 +24,6 @@ from energy_simlab.contracts.records import (
 class DeterministicTopologyService:
     source_id = "topology-service"
 
-    def __init__(self) -> None:
-        self._event_sequence = 0
-
     def recompute(self, topology: TopologySnapshotV1, logical_tick: int) -> TopologySnapshotV1:
         bus_by_id = {bus.id: bus for bus in topology.buses}
         adjacency = {bus_id: set[str]() for bus_id in bus_by_id}
@@ -138,12 +135,12 @@ class DeterministicTopologyService:
                 | {item.id for item in updated.components}
             )
         )
-        self._event_sequence += 1
+        event_sequence = next_version
         event = TopologyEventV1(
-            id=f"TOPOLOGY-EVENT-{self._event_sequence:08d}",
+            id=f"TOPOLOGY-EVENT-{event_sequence:08d}",
             source_id=self.source_id,
             logical_tick=logical_tick,
-            sequence=self._event_sequence,
+            sequence=event_sequence,
             branch_id="PCC",
             old_requested_state=pcc_before.requested_state,
             new_requested_state=BranchState.OPEN,

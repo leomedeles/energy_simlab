@@ -6,7 +6,9 @@ from dataclasses import dataclass
 
 from energy_simlab.contracts.enums import EnergizationState, FidelityResult
 from energy_simlab.contracts.records import (
+    BessModelStateV1,
     FidelityEventV1,
+    ModelRegistrySnapshotV1,
     ModelHandoffV1,
     QualityV1,
     SourceCounterV1,
@@ -52,6 +54,98 @@ class BessModelRegistry:
             fallback=self.fallback.observe(),
             detailed=None if self.detailed is None else self.detailed.observe(),
         )
+
+    def export_snapshot(
+        self,
+        *,
+        requested_power_mw: float,
+        accepted_power_mw: float,
+        target_power_mw: float,
+        last_command_id: str,
+    ) -> ModelRegistrySnapshotV1:
+        models = [self._snapshot_model(self.fallback, requested_power_mw, accepted_power_mw, target_power_mw, last_command_id)]
+        if self.detailed is not None:
+            models.append(
+                self._snapshot_model(
+                    self.detailed,
+                    requested_power_mw,
+                    accepted_power_mw,
+                    target_power_mw,
+                    last_command_id,
+                )
+            )
+        return ModelRegistrySnapshotV1(
+            active_model_id=self._active.model_id,
+            model_states=tuple(sorted(models, key=lambda item: item.model_id)),
+            transition_sequence=self._event_sequence,
+        )
+
+    @staticmethod
+    def _snapshot_model(
+        model: FallbackBess | DetailedBess,
+        requested_power_mw: float,
+        accepted_power_mw: float,
+        target_power_mw: float,
+        last_command_id: str,
+    ) -> BessModelStateV1:
+        observation = model.observe()
+        return BessModelStateV1(
+            model_id=observation.model_id,
+            model_version=observation.model_version,
+            energy_stored_mwh=observation.energy_stored_mwh,
+            energy_nominal_mwh=observation.energy_nominal_mwh,
+            requested_power_mw=requested_power_mw,
+            accepted_power_mw=accepted_power_mw,
+            target_power_mw=target_power_mw,
+            applied_power_mw=observation.applied_power_mw,
+            operating_mode=observation.operating_mode,
+            response_state_mw=(
+                observation.applied_power_mw if isinstance(model, DetailedBess) else None
+            ),
+            last_command_id=last_command_id,
+        )
+
+    @classmethod
+    def from_snapshot(
+        cls,
+        snapshot: ModelRegistrySnapshotV1,
+        *,
+        detailed_parameters: DetailedBessParameters,
+        macro_ticks: int,
+    ) -> "BessModelRegistry":
+        by_id = {item.model_id: item for item in snapshot.model_states}
+        fallback_state = by_id.get(FallbackBess.model_id)
+        if fallback_state is None or fallback_state.model_version != FallbackBess.model_version:
+            raise ValueError("snapshot lacks the supported fallback model")
+        fallback = FallbackBess(
+            parameters=detailed_parameters.base,
+            initial_energy_mwh=fallback_state.energy_stored_mwh,
+            operating_mode=fallback_state.operating_mode,
+        )
+        fallback.applied_power_mw = fallback_state.applied_power_mw
+        registry = cls(
+            fallback=fallback,
+            detailed_parameters=detailed_parameters,
+            macro_ticks=macro_ticks,
+        )
+        detailed_state = by_id.get(DetailedBess.model_id)
+        if detailed_state is not None:
+            if detailed_state.model_version != DetailedBess.model_version:
+                raise ValueError("unsupported detailed model version")
+            registry.detailed = DetailedBess(
+                parameters=detailed_parameters,
+                initial_energy_mwh=detailed_state.energy_stored_mwh,
+                initial_applied_power_mw=detailed_state.applied_power_mw,
+                operating_mode=detailed_state.operating_mode,
+            )
+        registry._event_sequence = snapshot.transition_sequence
+        if snapshot.active_model_id == FallbackBess.model_id:
+            registry._active = registry.fallback
+        elif snapshot.active_model_id == DetailedBess.model_id and registry.detailed is not None:
+            registry._active = registry.detailed
+        else:
+            raise ValueError("snapshot active model is unavailable")
+        return registry
 
     def activate_detailed(
         self,

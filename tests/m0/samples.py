@@ -326,6 +326,9 @@ def sample_records() -> tuple[VersionedV1, ...]:
     trace = TraceV1(run_id="TT000-REF-V1", parent_snapshot_id=None, entries=(trace_entry,))
     scheduled_event = ScheduledEventSnapshotV1(
         event_id="EVENT-CMD-P-001",
+        source_id="scenario",
+        event_kind="COMMAND",
+        subject_id="BESS",
         logical_tick=10,
         phase=EventPhase.COMMAND,
         source_order=1,
@@ -336,10 +339,12 @@ def sample_records() -> tuple[VersionedV1, ...]:
     scheduler = SchedulerSnapshotV1(
         current_tick=0,
         current_phase=None,
+        closed_through_tick=-1,
         insertion_sequence=1,
         publication_sequence=0,
         source_counters=(source_counter,),
         pending_events=(scheduled_event,),
+        cancelled_event_ids=(),
     )
     detailed_state = BessModelStateV1(
         model_id="bess.detailed",
@@ -370,6 +375,7 @@ def sample_records() -> tuple[VersionedV1, ...]:
     models = ModelRegistrySnapshotV1(
         active_model_id="bess.fallback",
         model_states=(detailed_state, fallback_state),
+        transition_sequence=0,
     )
     receipt = CommandReceiptV1(command=command, acknowledgement=acknowledgement, executed=True)
     controller = ControllerSnapshotV1(
@@ -377,6 +383,7 @@ def sample_records() -> tuple[VersionedV1, ...]:
         accepted_power_mw=0.4,
         target_power_mw=0.4,
         interlock_active=False,
+        acknowledgement_sequence=1,
         receipts=(receipt,),
         source_sequences=(source_counter,),
     )
@@ -386,7 +393,11 @@ def sample_records() -> tuple[VersionedV1, ...]:
         operating_mode=OperatingMode.GRID_CONNECTED_AVAILABLE,
         energization=EnergizationState.GRID_CONNECTED,
     )
-    alarms = AlarmRuntimeSnapshotV1(states=(alarm_state,), next_occurrence_sequence=2)
+    alarms = AlarmRuntimeSnapshotV1(
+        states=(alarm_state,),
+        event_sequence=2,
+        next_occurrence_sequence=1,
+    )
     rng = RngSnapshotV1(
         algorithm="MT19937",
         state_version=3,

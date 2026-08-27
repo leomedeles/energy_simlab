@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Energy SimLab — TT-000</title>
+  <style>
+    :root { color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    body { margin: 0; background: #071018; color: #d9f5ec; }
+    main { max-width: 960px; margin: 0 auto; padding: 28px; }
+    h1 { font-size: 20px; letter-spacing: .08em; color: #72e0bd; }
+    .panel { background: #0d1b25; border: 1px solid #244354; border-radius: 10px; padding: 18px; margin-top: 16px; }
+    svg { width: 100%; height: 260px; }
+    .wire { stroke: #72e0bd; stroke-width: 5; fill: none; }
+    .device { fill: #102c38; stroke: #88b8c8; stroke-width: 3; }
+    .label { fill: #d9f5ec; font-size: 15px; text-anchor: middle; }
+    .value { color: #f7ca65; }
+    .warning { color: #ff9c8a; }
+    dl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    dt { color: #88b8c8; font-size: 12px; } dd { margin: 2px 0 0; }
+    form { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+    label { display: grid; gap: 5px; color: #88b8c8; font-size: 12px; }
+    input, button { color: inherit; background: #071018; border: 1px solid #386477; border-radius: 5px; padding: 8px; }
+    button { cursor: pointer; border-color: #72e0bd; }
+    #status { font-size: 12px; color: #88b8c8; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>TT-000 · HIERARCHICAL ENERGY CO-SIMULATION</h1>
+  <section class="panel" aria-label="single-line diagram">
+    <svg viewBox="0 0 900 260" role="img" aria-label="Grid connected through PCC to local load and BESS">
+      <circle class="device" cx="95" cy="110" r="45"/><text class="label" x="95" y="116">GRID</text>
+      <path class="wire" d="M140 110H340M390 110H650"/>
+      <circle class="device" cx="365" cy="110" r="25"/><text class="label" x="365" y="165">PCC</text>
+      <rect class="device" x="650" y="65" width="150" height="90" rx="8"/><text class="label" x="725" y="116">LOCAL</text>
+      <path class="wire" d="M690 155V210M760 155V210"/>
+      <text class="label" x="690" y="238">LOAD 0.6 MW</text><text class="label" x="760" y="238">BESS</text>
+    </svg>
+    <dl>
+      <div><dt>Logical tick</dt><dd id="tick" class="value">0</dd></div>
+      <div><dt>Publication sequence</dt><dd id="sequence" class="value">0</dd></div>
+      <div><dt>Schema</dt><dd id="schema">1.0.0</dd></div>
+      <div><dt>Connection</dt><dd id="connection">connecting</dd></div>
+    </dl>
+  </section>
+  <section class="panel">
+    <form id="dispatch">
+      <label>Future macro tick<input id="applyTick" type="number" min="10" step="10" value="10"></label>
+      <label>BESS request (MW)<input id="power" type="number" min="-1" max="1" step="0.1" value="0.4"></label>
+      <button type="submit">Queue operator command</button>
+    </form>
+    <p id="status">Commands are admitted only for a future 1 s macro boundary.</p>
+  </section>
+  <section class="panel warning">Educational aggregate active-power and usable-energy model only. No voltage, frequency, protection, stability, interoperability, or production-suitability claim.</section>
+</main>
+<script>
+  const connection = document.querySelector('#connection');
+  const socket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/v1/publications`);
+  socket.onopen = () => connection.textContent = 'connected';
+  socket.onclose = event => connection.textContent = `resync required (${event.reason || event.code})`;
+  socket.onmessage = event => {
+    const publication = JSON.parse(event.data);
+    document.querySelector('#tick').textContent = publication.logical_tick;
+    document.querySelector('#sequence').textContent = publication.sequence;
+    document.querySelector('#schema').textContent = publication.schema_version;
+  };
+  let sequence = 0;
+  document.querySelector('#dispatch').addEventListener('submit', async event => {
+    event.preventDefault(); sequence += 1;
+    const tick = Number(document.querySelector('#applyTick').value);
+    const value = Number(document.querySelector('#power').value);
+    const id = `CMD-API-${String(sequence).padStart(8, '0')}`;
+    const command = {schema_version:'1.0.0',id,source_id:'operator-api',logical_tick:tick,sequence,target_id:'BESS',kind:'SET_ACTIVE_POWER',authority:'OPERATOR',apply_tick:tick,expiry_tick:tick,requested_value:value,unit:'MW',correlation_id:id,expected_model_version:null,expected_topology_version:null,reason:'viewer operator request'};
+    const response = await fetch('/api/v1/commands', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(command)});
+    document.querySelector('#status').textContent = response.ok ? `Queued ${id} for tick ${tick}` : `${response.status}: ${(await response.json()).detail}`;
+  });
+</script>
+</body>
+</html>

@@ -11,14 +11,14 @@ Stage D — Milestone Implementation
 | Gate A — learning charter | Approved by human project owner | `NODE_CONTEXT.md` |
 | Gate B — research | Approved by human project owner on 2026-08-26 | `RESEARCH_REPORT.md` |
 | Gate C — feature architecture | Approved by human project owner on 2026-08-26 | `FEATURE_CONTEXT.md` |
-| Implementation milestones | M0–M6 passed; M7 in progress | Approved `FEATURE_CONTEXT.md` and milestone evidence below |
-| Gate D — validation | Blocked pending completed implementation and validation | No validation review |
+| Implementation milestones | M0–M7 passed; implementation evidence ready for review | Approved `FEATURE_CONTEXT.md` and milestone evidence below |
+| Gate D — validation | Blocked pending separate validation review | Developer evidence prepared; no validation verdict |
 
 ## Implementation state
 
 - Implementation branch: `feature/TT-000-vertical-slice-0`
-- Active milestone: M7 — Reference demonstration and validation package
-- Implementation status: In progress
+- Active milestone: None — all approved implementation milestones passed
+- Implementation status: Complete; ready for separate validation review
 
 ## Completed
 
@@ -38,10 +38,11 @@ Stage D — Milestone Implementation
 - [x] M4 — Topology event and alarm lifecycle passed its approved gate.
 - [x] M5 — Snapshot and branching replay passed its approved gate.
 - [x] M6 — Asynchronous API and viewer passed its approved gate.
+- [x] M7 — Reference demonstration and validation package passed its approved developer gate.
 
 ## Active work
 
-M7 — Reference demonstration and validation package. Its prerequisite M6 passed and is recorded below.
+No developer milestone is active. M0–M7 passed sequentially. TT-000 is ready for a separate validation review and remains blocked at Gate D.
 
 ## Test evidence
 
@@ -253,6 +254,41 @@ Gate coverage:
 - Live ingress accepts only future exact macro boundaries and sorts eligible commands canonically before draining, independent of asynchronous arrival order.
 - Server configuration rejects more than one ASGI worker and rejects auto-reload for the in-memory owner.
 
+### M7 — Reference demonstration and validation package
+
+- Status: Passed (developer gate; independent validation pending)
+- Implementation commit: `7cc9194` (`feat(TT-000): package M7 reference demonstration evidence`)
+
+Commands and results:
+
+1. `.\.venv\Scripts\python.exe -m pytest tests/m7 -q`
+   - Passed: 4 tests in 3.23 s; final rerun passed in 3.05 s.
+2. `.\.venv\Scripts\python.exe -m pytest -q`
+   - Passed: 180 tests in 8.22 s, including every M0–M6 regression.
+3. First isolated-install attempt: create a CPython 3.14.7 venv, then install with `pip install --require-hashes -r requirements.lock`.
+   - Stopped before tests: the version-pinned lock intentionally contains no artifact hashes, so `--require-hashes` was incompatible. This flag had been introduced only in the new README command, not in the approved M0 install procedure. The README was corrected to `pip install -r requirements.lock`.
+4. Corrected isolated CPython 3.14.7 environment: `python -m pip install -r requirements.lock`, `python -m pip install --no-deps .`, `python -m pip check`, then `python -m pytest -q`.
+   - Passed: exact locked packages installed, project wheel built/installed, no broken requirements, and 180 tests passed in 10.19 s.
+5. Installed-wheel asset check: `python -c "from energy_simlab.viewer import viewer_html; print(len(viewer_html()))"` in the isolated environment.
+   - Passed: packaged static viewer loaded (4,868 characters).
+6. `.\.venv\Scripts\python.exe -m energy_simlab.bootstrap.demonstration --mode fast --suffix A`
+   - Passed: final mode `ISLANDED_UNSUPPORTED`, applied power 0 MW, energy `0.9998446478818566 MWh`, alarm active/acknowledged, trace SHA-256 `ee7552f36e05b795ac76562443dbd5e205f0ddec307f2a5d38e467f9f0f5b2c4`, final snapshot SHA-256 `b084af87407376735a1ab5b0b772943cf8296e6c1e5e6812c38cbdc121f30dc9`.
+7. `.\.venv\Scripts\python.exe -m energy_simlab.bootstrap.demonstration --mode fast --suffix B`
+   - Passed: final mode `ISLANDED_UNSUPPORTED`, applied power 0 MW, energy `0.9998446478818566 MWh`, alarm active/unacknowledged, trace SHA-256 `0bfe2d25db59135006993e6a3b438ace74e3b2eef4d40ae7e0b605e9d853a302`, final snapshot SHA-256 `e8d0dfca3a8d96a08e56ee79e744816fbfc7835f1df42630bebb669f8029ca69`.
+8. `.\.venv\Scripts\python.exe -m compileall -q src tests`, `.\.venv\Scripts\python.exe -m pip check`, and `git diff --check`.
+   - Passed.
+
+Gate coverage:
+
+- The fixed tick 0–120 reference scenario is available as a repeatable CLI and a typed composition function.
+- Fast-forward and fake-wall paced suffix-A executions produce byte-identical canonical traces, tick-90 snapshots and final snapshots; wall pacing diagnostics remain excluded.
+- The scenario produces identical canonical trace/final snapshot bytes with zero viewers, one fast viewer, one slow viewer and three mixed-rate viewers.
+- The golden trace includes V1 command, acknowledgement, fidelity, topology, alarm, publication and snapshot capture/restore records with correlation/causation fields.
+- The tick-90 snapshot retains the active/unacknowledged alarm; suffix A acknowledges it and suffix B rejects `CMD-P-ALT-001` with `TARGET_MODE_UNAVAILABLE` while physical energy remains equal.
+- `README.md` contains the exact setup, locked install, fast/paced/alternative demonstration and single-owner viewer commands plus visible unsupported phenomena and nonclaims.
+- `VALIDATION_REPORT.md` contains developer-supplied traceability, comparisons, replay evidence, limitations and reproduction data, while explicitly reserving verdict and Gate D for an independent reviewer.
+- `ARCHITECTURE.md`, `REFERENCES.md`, `CHANGELOG.md` and `TECH_TREE.md` remain unchanged because their approved updates occur only during validation/integration. `RETROSPECTIVE.md` remains unpopulated as instructed.
+
 ## Decisions and deviations
 
 - Gate B evidence: `RESEARCH_REPORT.md`.
@@ -274,8 +310,11 @@ Gate coverage:
 - M5 derives topology-event identity from the snapshotted topology version, eliminating an otherwise hidden event counter while retaining the exact M4 event identity.
 - M6 returns HTTP 202 for canonical future command admission and exposes the final canonical acknowledgement as a separate read after deterministic boundary processing.
 - M6 fan-out publishes to the lossless core evidence sink before bounded per-viewer observation work; viewer delivery performs no awaited callback into the synchronous owner.
+- M7 records actual numerical residuals in reference publications and hard-codes same-profile golden hashes only after the analytic, invariant, snapshot and adapter gates passed.
+- The M7 evidence package does not make a validation verdict. Validated architecture/reference/changelog/tech-tree updates and the retrospective remain reserved for later authorized stages.
+- The first M7 isolated-install command added an unsupported `--require-hashes` flag; after correcting the README to the approved version-pinned install command, the isolated full suite passed. This was a documentation-command defect, not an approved dependency or architecture change.
 - No architecture or scope deviations recorded. Corrected implementation-test failures are the M0 whitespace-sensitive documentation assertion and the M5 contracts dictionary-boundary regression described above.
 
 ## Next permitted action
 
-Implement only M7, run the complete reference demonstration and every M0–M6 regression from a clean locked environment, then stop ready for separate Gate D validation review if the M7 gate passes.
+Stop developer work on TT-000. A separate authorized validation review may evaluate the prepared evidence and decide Gate D. Do not mark TT-000 validated, integrated, active or unlocked, do not populate the retrospective, and do not begin another node before that review.

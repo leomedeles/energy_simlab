@@ -11,13 +11,13 @@ Stage D — Milestone Implementation
 | Gate A — learning charter | Approved by human project owner | `NODE_CONTEXT.md` |
 | Gate B — research | Approved by human project owner on 2026-08-26 | `RESEARCH_REPORT.md` |
 | Gate C — feature architecture | Approved by human project owner on 2026-08-26 | `FEATURE_CONTEXT.md` |
-| Implementation milestones | M0–M4 passed; M5 in progress | Approved `FEATURE_CONTEXT.md` and milestone evidence below |
+| Implementation milestones | M0–M5 passed; M6 in progress | Approved `FEATURE_CONTEXT.md` and milestone evidence below |
 | Gate D — validation | Blocked pending completed implementation and validation | No validation review |
 
 ## Implementation state
 
 - Implementation branch: `feature/TT-000-vertical-slice-0`
-- Active milestone: M5 — Snapshot and branching replay
+- Active milestone: M6 — Asynchronous API and viewer
 - Implementation status: In progress
 
 ## Completed
@@ -36,10 +36,11 @@ Stage D — Milestone Implementation
 - [x] M2 — Grid-connected fallback slice passed its approved gate.
 - [x] M3 — Detailed multi-rate model and activation passed its approved gate.
 - [x] M4 — Topology event and alarm lifecycle passed its approved gate.
+- [x] M5 — Snapshot and branching replay passed its approved gate.
 
 ## Active work
 
-M5 — Snapshot and branching replay. Its prerequisite M4 passed and is recorded below.
+M6 — Asynchronous API and viewer. Its prerequisite M5 passed and is recorded below.
 
 ## Test evidence
 
@@ -190,6 +191,37 @@ Gate coverage:
 - The topology event, typed interlock event, balance and alarm occurrence share explicit correlation/causation lineage.
 - Alarm occurrence, acknowledge-while-active, return/close, clear-before-acknowledge and acknowledge/close sequences are exact on separate active/acknowledged axes.
 
+### M5 — Snapshot and branching replay
+
+- Status: Passed
+- Implementation commit: `323660d` (`feat(TT-000): implement M5 snapshot and branching replay`)
+
+Commands and results:
+
+1. `.\.venv\Scripts\python.exe -m pytest tests/m0 -q`
+   - Initial regression run: 112 passed, 1 failed. The new shared phase-priority declaration used a dictionary annotation in the contracts package, which the approved no-arbitrary-dictionary boundary check rejected. It was replaced with a closed-enum priority function; no scheduler order changed.
+   - Rerun passed: 113 tests in 1.35 s.
+2. `.\.venv\Scripts\python.exe -m pytest tests/m5 -q`
+   - Passed: 7 tests in 2.11 s.
+3. `.\.venv\Scripts\python.exe -m pytest -q`
+   - Passed: 161 tests in 3.31 s, including all M0–M4 regressions.
+4. `.\.venv\Scripts\python.exe -m pip check`
+   - Passed: no broken requirements.
+5. `.\.venv\Scripts\python.exe -m compileall -q src tests`
+   - Passed.
+6. `git diff --check`
+   - Passed.
+
+Gate coverage:
+
+- The mutation inventory restores scheduler key/queue/tombstones/counters, publication sequence, active and inactive model state, controller ownership, validator receipts/dedupe/source sequences, topology/mode, acknowledged alarm occurrence, pending ingress, trace state and injected MT19937 state.
+- V1 snapshots use compact sorted finite JSON and a lowercase SHA-256 checksum over the envelope with the checksum field empty; byte corruption is detected.
+- Unknown envelope major schema, model identity/version and numerical runtime profile are rejected before a fresh destination becomes started.
+- Scheduler events serialize by the approved numeric semantic phase order regardless of backing-heap layout; receipts, counters, model states and ingress are canonically sorted independent of insertion order.
+- Two fresh same-branch continuations produce byte-identical trace suffixes and exact final canonical snapshot bytes, including RNG continuation.
+- Alternative suffixes share the exact trace prefix through `S-TT000-090`, repeat byte-for-byte within each branch, and first diverge at `CMD-ACK-001` versus `CMD-P-ALT-001`; the latter is causally rejected with `TARGET_MODE_UNAVAILABLE`.
+- Restore creates a new deterministic run lineage with `parent_snapshot_id`; snapshot capture/restore lifecycle records are included in the canonical trace.
+
 ## Decisions and deviations
 
 - Gate B evidence: `RESEARCH_REPORT.md`.
@@ -207,8 +239,10 @@ Gate coverage:
 - The model registry constructs and validates a detailed candidate before atomically changing the active pointer; only fallback-to-detailed activation exists.
 - M4 adds the approved explicit safe-zero publication as `InterlockEventV1`; it carries target/applied power and energy before/after plus topology/correlation lineage.
 - Alarm state retains occurrence identity after return until acknowledgement and emits `CLOSED` only when both condition-clear and acknowledged are true.
-- No architecture or scope deviations recorded. The only failed test to date was the corrected M0 whitespace-sensitive documentation assertion described above.
+- M5 keeps checksum/DTO code in the serialization adapter, compatibility policy in the inward snapshot package and heap/domain mapping in application orchestration; no adapter object enters domain state.
+- M5 derives topology-event identity from the snapshotted topology version, eliminating an otherwise hidden event counter while retaining the exact M4 event identity.
+- No architecture or scope deviations recorded. Corrected implementation-test failures are the M0 whitespace-sensitive documentation assertion and the M5 contracts dictionary-boundary regression described above.
 
 ## Next permitted action
 
-Implement only M5, run every M5 gate test plus applicable M0–M4 regressions, and continue to M6 only if the M5 gate passes.
+Implement only M6, run every M6 gate test plus applicable M0–M5 regressions, and continue to M7 only if the M6 gate passes.

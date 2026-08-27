@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from hashlib import sha256
 import random
 
@@ -35,6 +36,7 @@ from energy_simlab.contracts.records import (
     TraceEntryV1,
     TraceV1,
     VersionedV1,
+    MacroPublicationV1,
 )
 from energy_simlab.control import CommandValidator, PowerController
 from energy_simlab.kernel import DeterministicScheduler, KernelEvent, KernelEventKind
@@ -56,6 +58,14 @@ from .scheduler_snapshot import scheduler_from_snapshot, scheduler_to_snapshot
 RecordEncoder = Callable[[VersionedV1], bytes]
 SnapshotDecoder = Callable[[bytes], SnapshotEnvelopeV1]
 SnapshotEncoder = Callable[[SnapshotEnvelopeV1], bytes]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PowerMacroExecution:
+    acknowledgement: AcknowledgementV1
+    mean_power_mw: float
+    energy_residual_mwh: float
+    coupling_residual_mwh: float
 
 
 def _detailed_parameters(configuration: SimulationConfigV1) -> DetailedBessParameters:
@@ -167,6 +177,9 @@ class ReplayRuntime:
             self.publication_sequence += 1
 
     def execute_power_command(self, command: CommandV1) -> AcknowledgementV1:
+        return self.execute_power_macro(command).acknowledgement
+
+    def execute_power_macro(self, command: CommandV1) -> PowerMacroExecution:
         self.run_until(command.apply_tick)
         decision = self.validator.validate_power_request(
             command,
@@ -177,6 +190,9 @@ class ReplayRuntime:
         )
         self._append(command, TraceRecordKind.COMMAND)
         self._append(decision.acknowledgement, TraceRecordKind.ACKNOWLEDGEMENT)
+        mean_power_mw = self.active_model.applied_power_mw
+        energy_residual_mwh = 0.0
+        coupling_residual_mwh = 0.0
         if (
             not decision.duplicate
             and decision.acknowledgement.status
@@ -185,17 +201,27 @@ class ReplayRuntime:
             self.controller.apply_decision(command, decision)
             self.last_command_id = command.id
             if isinstance(self.active_model, DetailedBess):
-                FixedRatioBessRunner(
+                reduction = FixedRatioBessRunner(
                     macro_seconds=self.macro_duration_seconds,
                     child_seconds=self.scenario.configuration.base_tick_seconds,
                 ).advance_macro(self.active_model, self.controller.target_power_mw)
+                mean_power_mw = reduction.mean_power_mw
+                energy_residual_mwh = reduction.energy_residual_mwh
+                coupling_residual_mwh = reduction.coupling_residual_mwh
             else:
-                self.active_model.advance(
+                step = self.active_model.advance(
                     self.controller.target_power_mw,
                     self.macro_duration_seconds,
                 )
+                mean_power_mw = step.mean_power_mw
+                energy_residual_mwh = step.energy_residual_mwh
             self.run_until(command.apply_tick + self.scenario.configuration.macro_ticks)
-        return decision.acknowledgement
+        return PowerMacroExecution(
+            acknowledgement=decision.acknowledgement,
+            mean_power_mw=mean_power_mw,
+            energy_residual_mwh=energy_residual_mwh,
+            coupling_residual_mwh=coupling_residual_mwh,
+        )
 
     def activate_detailed(self, command: CommandV1) -> FidelityEventV1:
         self.run_until(command.apply_tick)
@@ -326,6 +352,42 @@ class ReplayRuntime:
             self._append(event, TraceRecordKind.ALARM)
         self.last_command_id = command.id
         return decision.acknowledgement, events
+
+    def capture_command(
+        self,
+        command: CommandV1,
+        *,
+        snapshot_id: str,
+        snapshot_encoder: SnapshotEncoder,
+    ) -> tuple[AcknowledgementV1, bytes]:
+        self.run_until(command.apply_tick)
+        decision = self.validator.validate_action_request(
+            command,
+            current_tick=command.apply_tick,
+            topology_version=self.topology.topology_version,
+            model=self.active_model,
+            expected_kind=CommandKind.CAPTURE_SNAPSHOT,
+            expected_target_id=snapshot_id,
+        )
+        self._append(command, TraceRecordKind.COMMAND)
+        self._append(decision.acknowledgement, TraceRecordKind.ACKNOWLEDGEMENT)
+        if decision.acknowledgement.status is not AcknowledgementStatus.ACCEPTED:
+            raise ValueError("snapshot command was rejected")
+        self.last_command_id = command.id
+        return decision.acknowledgement, self.capture_bytes(
+            snapshot_id=snapshot_id,
+            correlation_id=command.correlation_id or command.id,
+            causation_id=decision.acknowledgement.id,
+            snapshot_encoder=snapshot_encoder,
+        )
+
+    def record_publication(self, publication: MacroPublicationV1) -> None:
+        if publication.run_id != self.run_id:
+            raise ValueError("publication run lineage does not match the runtime")
+        if publication.sequence != self.publication_sequence + 1:
+            raise ValueError("publication sequence must be the next canonical value")
+        self.publication_sequence = publication.sequence
+        self._append(publication, TraceRecordKind.PUBLICATION)
 
     def capture_envelope(
         self,
@@ -569,4 +631,4 @@ class FreshRuntimeDestination:
         return staged
 
 
-__all__ = ["FreshRuntimeDestination", "ReplayRuntime"]
+__all__ = ["FreshRuntimeDestination", "PowerMacroExecution", "ReplayRuntime"]

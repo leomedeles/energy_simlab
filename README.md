@@ -1,40 +1,79 @@
 # Hierarchical Energy Co-Simulation Lab
 
-This repository is the documentation bootstrap for a learning-first, modular Model-in-the-Loop energy simulation laboratory.
+This learning-first laboratory now contains the implementation of the approved TT-000 vertical slice on `feature/TT-000-vertical-slice-0`. The implementation is not yet validated, integrated, or unlocked; it is being prepared for a separate Gate D review.
 
-The long-term direction is an operationally representative, open-source power-system laboratory. Development begins with deliberately simplified models and replaces or complements them with more mature implementations only when a validated learning step requires it.
+TT-000 demonstrates deterministic logical time, two BESS fidelity levels, topology and unsupported-island handling, typed commands/telemetry/alarms, complete snapshots with branching replay, and an isolated HTTP/WebSocket viewer edge.
 
-No simulation code has been implemented yet. `TT-000` is the proposed first vertical slice and must pass the research and architecture gates before development begins.
+## Developer setup
 
-## Reading order
+The exact replay profile is CPython 3.14.7 on Windows x86-64. From PowerShell:
+
+```powershell
+py -3.14 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.lock
+.\.venv\Scripts\python.exe -m pip install --no-deps -e .
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+`requirements.lock` contains the complete transitive environment used for evidence. Exact direct versions and licenses are recorded in `pyproject.toml` and `docs/nodes/TT-000-vertical-slice-0/DEPENDENCY_LICENSES.md`.
+
+## Deterministic reference scenario
+
+Run suffix A in fast-forward mode:
+
+```powershell
+.\.venv\Scripts\python.exe -m energy_simlab.bootstrap.demonstration --mode fast --suffix A
+```
+
+Run the same scenario with real wall-clock pacing (about 12 seconds), or print the full canonical trace:
+
+```powershell
+.\.venv\Scripts\python.exe -m energy_simlab.bootstrap.demonstration --mode paced --suffix A
+.\.venv\Scripts\python.exe -m energy_simlab.bootstrap.demonstration --mode fast --suffix A --trace
+```
+
+The alternative deterministic continuation is:
+
+```powershell
+.\.venv\Scripts\python.exe -m energy_simlab.bootstrap.demonstration --mode fast --suffix B
+```
+
+The approved scenario applies +0.4 MW to the fallback model, activates the detailed model, requests -1.0 MW, opens PCC, captures at tick 90, then either acknowledges the active island alarm (suffix A) or rejects an island dispatch with `TARGET_MODE_UNAVAILABLE` (suffix B). Golden hashes and outcomes are asserted in `tests/m7/test_reference_demonstration.py`.
+
+## HTTP/WebSocket viewer
+
+Launch the single-owner adapter:
+
+```powershell
+.\.venv\Scripts\python.exe -m energy_simlab.bootstrap --host 127.0.0.1 --port 8000
+```
+
+Then open `http://127.0.0.1:8000/`. The static single-line viewer reads canonical HTTP schemas, admits operator commands only for future macro boundaries, and observes canonical publications on `/api/v1/publications`. HTTP admission returns 202; the final canonical acknowledgement is read separately after deterministic boundary processing.
+
+The in-memory owner supports exactly one ASGI worker and rejects auto-reload. Viewer queues hold 64 publication frames. Slow telemetry is coalesced by signal; discrete overflow disconnects that viewer with a resynchronization reason. Viewer connections, render rate, queues, drops, and wall-clock diagnostics cannot change canonical simulation results.
+
+## Implemented boundaries
+
+- `energy_simlab.contracts`: frozen standard-library V1 records, enums, units, and ports.
+- `energy_simlab.kernel`: synchronous integer-time scheduler and pacing seam.
+- `energy_simlab.models.bess`: bounded fallback and reduced-order detailed BESS models with atomic one-way activation.
+- `energy_simlab.topology`, `balance`, `control`, and `alarms`: deterministic connectivity, algebraic active-power bookkeeping, command ownership, safe-zero interlock, and alarm lifecycle.
+- `energy_simlab.snapshots` and adapters: complete state inventory, compatibility policy, canonical JSON, SHA-256 integrity, and fresh-runtime restore.
+- `energy_simlab.adapters.api` and `viewer`: typed HTTP/WebSocket mappings and bounded observation-only fan-out.
+
+## Explicit limitations
+
+TT-000 is an educational aggregate active-power and usable-energy model. It does not implement or claim voltage, frequency, current, reactive power, AC/DC power flow, electrical island stability, grid-forming control, protection-grade behavior, physical breaker travel, device-calibrated battery behavior, degradation, thermal behavior, industrial-protocol interoperability, cybersecurity, standards compliance, or production suitability. PCC reclosing and detailed-to-fallback activation are outside the approved scope.
+
+## Project reading order
 
 1. [`MASTER_PROJECT_CONTEXT.md`](MASTER_PROJECT_CONTEXT.md) — project constitution and invariants.
-2. [`NORTH_STAR.md`](NORTH_STAR.md) — final-boss reference system and direction of growth.
-3. [`DEVELOPMENT_PROTOCOL.md`](DEVELOPMENT_PROTOCOL.md) — lifecycle for every tech-tree node.
-4. [`TECH_TREE.md`](TECH_TREE.md) — live state and current frontier; initially empty.
-5. [`ARCHITECTURE.md`](ARCHITECTURE.md) — architecture that actually exists; initially unimplemented.
-6. [`docs/nodes/TT-000-vertical-slice-0/NODE_CONTEXT.md`](docs/nodes/TT-000-vertical-slice-0/NODE_CONTEXT.md) — proposed V0 learning charter.
+2. [`NORTH_STAR.md`](NORTH_STAR.md) — long-term direction.
+3. [`DEVELOPMENT_PROTOCOL.md`](DEVELOPMENT_PROTOCOL.md) — gated lifecycle.
+4. [`TECH_TREE.md`](TECH_TREE.md) — validated live capability state; TT-000 remains locked pending Gate D.
+5. [`ARCHITECTURE.md`](ARCHITECTURE.md) — validated architecture ledger; implementation evidence is not entered there before Gate D.
+6. [`docs/nodes/TT-000-vertical-slice-0/FEATURE_CONTEXT.md`](docs/nodes/TT-000-vertical-slice-0/FEATURE_CONTEXT.md) — approved TT-000 specification.
+7. [`docs/nodes/TT-000-vertical-slice-0/PROGRESS.md`](docs/nodes/TT-000-vertical-slice-0/PROGRESS.md) — sequential implementation evidence.
 
 Codex and other implementation agents must also read [`AGENTS.md`](AGENTS.md).
-
-## Sources of truth
-
-| Question | Source of truth |
-|---|---|
-| Why does the project exist? | `MASTER_PROJECT_CONTEXT.md` |
-| What direction should maturation take? | `NORTH_STAR.md` |
-| How is a new capability developed? | `DEVELOPMENT_PROTOCOL.md` |
-| What has actually been unlocked? | `TECH_TREE.md` |
-| What is currently implemented? | `ARCHITECTURE.md` |
-| What is one selected node required to deliver? | Its `FEATURE_CONTEXT.md` |
-| Why was an architectural decision made? | `docs/decisions/ADR-*.md` |
-
-## Immediate workflow
-
-1. Review and approve the `TT-000` learning charter.
-2. Run the prepared V0 deep-research prompt.
-3. Save the cited synthesis as `RESEARCH_REPORT.md`.
-4. Generate and review `FEATURE_CONTEXT.md`.
-5. Only then create the implementation branch and write code.
-
-The tech tree is not a frozen roadmap. It is populated after validated integrations and proposes only the nearby frontier revealed by the current system.

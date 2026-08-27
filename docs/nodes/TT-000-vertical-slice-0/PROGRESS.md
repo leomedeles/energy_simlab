@@ -11,13 +11,13 @@ Stage D — Milestone Implementation
 | Gate A — learning charter | Approved by human project owner | `NODE_CONTEXT.md` |
 | Gate B — research | Approved by human project owner on 2026-08-26 | `RESEARCH_REPORT.md` |
 | Gate C — feature architecture | Approved by human project owner on 2026-08-26 | `FEATURE_CONTEXT.md` |
-| Implementation milestones | M0–M5 passed; M6 in progress | Approved `FEATURE_CONTEXT.md` and milestone evidence below |
+| Implementation milestones | M0–M6 passed; M7 in progress | Approved `FEATURE_CONTEXT.md` and milestone evidence below |
 | Gate D — validation | Blocked pending completed implementation and validation | No validation review |
 
 ## Implementation state
 
 - Implementation branch: `feature/TT-000-vertical-slice-0`
-- Active milestone: M6 — Asynchronous API and viewer
+- Active milestone: M7 — Reference demonstration and validation package
 - Implementation status: In progress
 
 ## Completed
@@ -37,10 +37,11 @@ Stage D — Milestone Implementation
 - [x] M3 — Detailed multi-rate model and activation passed its approved gate.
 - [x] M4 — Topology event and alarm lifecycle passed its approved gate.
 - [x] M5 — Snapshot and branching replay passed its approved gate.
+- [x] M6 — Asynchronous API and viewer passed its approved gate.
 
 ## Active work
 
-M6 — Asynchronous API and viewer. Its prerequisite M5 passed and is recorded below.
+M7 — Reference demonstration and validation package. Its prerequisite M6 passed and is recorded below.
 
 ## Test evidence
 
@@ -222,6 +223,36 @@ Gate coverage:
 - Alternative suffixes share the exact trace prefix through `S-TT000-090`, repeat byte-for-byte within each branch, and first diverge at `CMD-ACK-001` versus `CMD-P-ALT-001`; the latter is causally rejected with `TARGET_MODE_UNAVAILABLE`.
 - Restore creates a new deterministic run lineage with `parent_snapshot_id`; snapshot capture/restore lifecycle records are included in the canonical trace.
 
+### M6 — Asynchronous API and viewer
+
+- Status: Passed
+- Implementation commit: `bc2ef0d` (`feat(TT-000): isolate M6 API and viewer adapters`)
+
+Commands and results:
+
+1. `.\.venv\Scripts\python.exe -m pytest tests/m6 -q`
+   - Passed: 7 tests in 2.50 s.
+2. `.\.venv\Scripts\python.exe -m pytest -q`
+   - Passed: 174 tests in 6.59 s, including all M0–M5 regressions.
+3. `.\.venv\Scripts\python.exe -m pip check`
+   - Passed: no broken requirements.
+4. `.\.venv\Scripts\python.exe -m compileall -q src tests`
+   - Passed.
+5. `git diff --check`
+   - Passed.
+
+Gate coverage:
+
+- Real ASGI HTTP requests validate `CommandV1` through generated Pydantic DTOs, return canonical admitted-command and acknowledgement schemas, and map topology reads back to frozen domain records.
+- WebSocket publication frames carry canonical `logical_tick`, `sequence` and `schema_version` fields.
+- Zero, one and three viewer patterns, plus fast, slow and mixed drain rates, produce byte-identical canonical domain traces for the same ordered input log.
+- Every per-viewer queue has the approved capacity of 64 publication frames.
+- On telemetry saturation, queued continuous frames coalesce to the latest sample per `(subject_id, signal_id)`; the infrastructure drop counter records replaced frames.
+- When 64 discrete frames leave no capacity after telemetry coalescing, the viewer is disconnected with `SLOW_VIEWER_RESYNC_REQUIRED`; the lossless evidence sink still retains every publication.
+- Viewer drop counts, queue state and disconnect reasons remain infrastructure diagnostics and do not enter the canonical trace.
+- Live ingress accepts only future exact macro boundaries and sorts eligible commands canonically before draining, independent of asynchronous arrival order.
+- Server configuration rejects more than one ASGI worker and rejects auto-reload for the in-memory owner.
+
 ## Decisions and deviations
 
 - Gate B evidence: `RESEARCH_REPORT.md`.
@@ -241,8 +272,10 @@ Gate coverage:
 - Alarm state retains occurrence identity after return until acknowledgement and emits `CLOSED` only when both condition-clear and acknowledged are true.
 - M5 keeps checksum/DTO code in the serialization adapter, compatibility policy in the inward snapshot package and heap/domain mapping in application orchestration; no adapter object enters domain state.
 - M5 derives topology-event identity from the snapshotted topology version, eliminating an otherwise hidden event counter while retaining the exact M4 event identity.
+- M6 returns HTTP 202 for canonical future command admission and exposes the final canonical acknowledgement as a separate read after deterministic boundary processing.
+- M6 fan-out publishes to the lossless core evidence sink before bounded per-viewer observation work; viewer delivery performs no awaited callback into the synchronous owner.
 - No architecture or scope deviations recorded. Corrected implementation-test failures are the M0 whitespace-sensitive documentation assertion and the M5 contracts dictionary-boundary regression described above.
 
 ## Next permitted action
 
-Implement only M6, run every M6 gate test plus applicable M0–M5 regressions, and continue to M7 only if the M6 gate passes.
+Implement only M7, run the complete reference demonstration and every M0–M6 regression from a clean locked environment, then stop ready for separate Gate D validation review if the M7 gate passes.

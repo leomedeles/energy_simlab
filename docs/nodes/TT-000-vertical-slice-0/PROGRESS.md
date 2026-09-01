@@ -2,7 +2,7 @@
 
 ## Current stage
 
-Stage C — Corrective Feature Architecture, reopened after failed Gate D validation
+Stage D — Corrective Milestone Implementation
 
 ## Gate status
 
@@ -13,15 +13,18 @@ Stage C — Corrective Feature Architecture, reopened after failed Gate D valida
 | Gate C — original feature architecture | Approved by human project owner on 2026-08-26 | `FEATURE_CONTEXT.md` |
 | Original implementation milestones | M0–M7 developer gates historically passed; evidence preserved but insufficient for integrated completion | Milestone evidence below; 180-test and suffix results |
 | Gate D — validation | **Not approved on 2026-09-01; corrective work required** | `VALIDATION_REPORT.md`; GitHub issue #1; manual reproduction |
-| Corrective Gate C amendment | Draft; awaiting human project-owner approval | `FEATURE_CONTEXT_AMENDMENT_01.md`; proposed `ADR-0002` |
-| Corrective implementation | Blocked pending amendment approval | Proposed milestones R0–R3 |
+| Corrective Gate C amendment | **Approved by human project owner on 2026-09-01** | `FEATURE_CONTEXT_AMENDMENT_01.md`; accepted `ADR-0002` |
+| Corrective implementation | Authorized; R0 is active and R0–R2 are the current requested developer scope | Approved milestones R0–R3; current assignment R0–R2 |
 
 ## Implementation state
 
 - Implementation branch: `feature/TT-000-vertical-slice-0`
-- Preserved baseline: `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85`
-- Active milestone: None — corrective implementation is not authorized
-- Implementation status: Original component implementation preserved; integrated TT-000 behavior incomplete
+- Preserved pre-correction baseline: `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85`
+- Corrective Gate C approval: Human project owner, 2026-09-01
+- Accepted corrective decision: `ADR-0002-integrated-runtime-owner-and-server-lifecycle.md`
+- Active milestone: R0 — Characterize and repair the executable profile
+- Current developer authorization: Execute R0, R1 and R2 sequentially; stop on a failed gate or contradicted assumption
+- Implementation status: Corrective Stage D authorized; no corrective milestone has yet been reported complete
 - Node status: Unvalidated, unintegrated, inactive and locked
 
 ## Completed
@@ -48,14 +51,21 @@ Stage C — Corrective Feature Architecture, reopened after failed Gate D valida
 - [x] Human Gate D manual review reproduced scheduler-only commandless advancement without held-input physics.
 - [x] Gate D was not approved on 2026-09-01.
 - [x] Stage C was reopened without rewriting the original approval or implementation history.
-- [x] Drafted `FEATURE_CONTEXT_AMENDMENT_01.md` and proposed `ADR-0002`.
-- [ ] Human project owner has reviewed and approved the corrective Gate C amendment.
-- [ ] Corrective milestones R0–R3 are authorized and complete.
+- [x] Drafted `FEATURE_CONTEXT_AMENDMENT_01.md` and accepted `ADR-0002`.
+- [x] Human project owner reviewed and approved the corrective Gate C amendment on 2026-09-01.
+- [x] ADR-0002 accepted through the corrective Gate C approval.
+- [x] Corrective Stage D milestones R0–R3 authorized by the approved amendment.
+- [ ] R0 — Characterize and repair the executable profile passes.
+- [ ] R1 — Integrated deterministic runtime owner passes.
+- [ ] R2 — Operational ASGI composition passes.
+- [ ] R3 — Regression and Gate D package passes.
 - [ ] Gate D revalidation passes.
 
 ## Active work
 
-Documentation-only corrective Stage C is active. The amendment and ADR are ready for human review. No dependency or implementation change is authorized until the human project owner approves the corrective Gate C checklist.
+Corrective Stage D is active. R0 is the current milestone. The developer may execute R0, then R1, then R2 under the approved amendment, recording commands, results, decisions, deviations and commits after each milestone. R1 may not begin until R0 passes; R2 may not begin until R1 passes. Stop and return to the appropriate gate if a milestone fails or evidence contradicts the approved amendment.
+
+R3 remains approved by Gate C but is not part of the immediate requested developer assignment.
 
 ## Corrective Gate D loop
 
@@ -352,10 +362,20 @@ Gate coverage:
 - M7 records actual numerical residuals in reference publications and hard-codes same-profile golden hashes only after the analytic, invariant, snapshot and adapter gates passed.
 - The M7 evidence package does not make a validation verdict. Validated architecture/reference/changelog/tech-tree updates and the retrospective remain reserved for later authorized stages.
 - The first M7 isolated-install command added an unsupported `--require-hashes` flag; after correcting the README to the approved version-pinned install command, the isolated full suite passed. This was a documentation-command defect, not an approved dependency or architecture change.
-- Gate D confirmed an integrated runtime architecture/test gap. The correction remains within TT-000 and is governed by `FEATURE_CONTEXT_AMENDMENT_01.md` and proposed `ADR-0002`.
+- Gate D confirmed an integrated runtime architecture/test gap. The correction remains within TT-000 and is governed by `FEATURE_CONTEXT_AMENDMENT_01.md` and accepted `ADR-0002`.
 
 ## Next permitted action
 
-The human project owner reviews `FEATURE_CONTEXT_AMENDMENT_01.md` and proposed `ADR-0002`. If acceptable, the owner explicitly approves the corrective Gate C checklist and records the approval date.
+A developer agent may execute corrective milestones R0 through R2 sequentially under approved `FEATURE_CONTEXT_AMENDMENT_01.md` and accepted `ADR-0002`.
 
-Until that approval, do not modify implementation code or dependencies, begin R0, mark TT-000 validated/integrated/active/unlocked, populate the retrospective, update the canonical technology frontier, merge the feature branch, or begin another node.
+The developer must:
+
+1. read the required repository documents and both corrective artifacts completely;
+2. confirm the feature branch and preserved baseline/history;
+3. execute R0 and its exit gate before beginning R1;
+4. execute R1 and its exit gate before beginning R2;
+5. execute R2 and its exit gate;
+6. update this file after every milestone with exact commits, commands, results, decisions and deviations;
+7. stop on failure, scope expansion, contract migration or contradicted assumptions.
+
+Do not execute R3 unless separately requested, approve Gate D, mark TT-000 validated/integrated/active/unlocked, populate the retrospective, update the canonical technology frontier, merge the feature branch, or begin another node.

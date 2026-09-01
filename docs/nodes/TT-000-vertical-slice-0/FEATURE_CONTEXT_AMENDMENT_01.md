@@ -246,22 +246,22 @@ During corrective implementation:
 
 Before corrective Stage D begins, the human project owner must explicitly approve:
 
-- [ ] The failed Gate D evidence and return to corrective Stage C are accepted.
-- [ ] The correction remains TT-000 scope and does not create a new node.
-- [ ] One synchronous runtime owner and one ASGI lifespan-managed pacing task are approved.
-- [ ] Complete macro semantics, including commandless ZOH advancement, are approved.
-- [ ] HTTP admission, future-boundary drain and final acknowledgement semantics are approved.
-- [ ] Publication on every completed macro and viewer independence are approved.
-- [ ] `wsproto` is approved as the explicitly declared and locked WebSocket backend.
-- [ ] Snapshot inclusions/exclusions for the runtime owner are approved.
-- [ ] Corrective milestones R0–R3 and their required tests are approved.
-- [ ] Change classification, compatibility and rollback policy are approved.
-- [ ] Gate D remains not approved and TT-000 remains locked until successful revalidation.
+- [x] The failed Gate D evidence and return to corrective Stage C are accepted.
+- [x] The correction remains TT-000 scope and does not create a new node.
+- [x] One synchronous runtime owner and one ASGI lifespan-managed pacing task are approved.
+- [x] Complete macro semantics, including commandless ZOH advancement, are approved.
+- [x] HTTP admission, future-boundary drain and final acknowledgement semantics are approved.
+- [x] Publication on every completed macro and viewer independence are approved.
+- [x] `wsproto` is approved as the explicitly declared and locked WebSocket backend.
+- [x] Snapshot inclusions/exclusions for the runtime owner are approved.
+- [x] Corrective milestones R0–R3 and their required tests are approved.
+- [x] Change classification, compatibility and rollback policy are approved.
+- [x] Gate D remains not approved and TT-000 remains locked until successful revalidation.
 
 Approval record:
 
-- Approved by:
-- Approval date:
-- Approval statement/reference:
+- Approved by: Leo  
+- Approval date: 01.09.2026
+- Approval statement/reference: Looks fine
 
 Until this checklist is approved and recorded in `PROGRESS.md`, implementation remains blocked.

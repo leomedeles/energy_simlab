@@ -52,6 +52,8 @@ Launch the single-owner adapter:
 
 Then open `http://127.0.0.1:8000/`. The static single-line viewer reads canonical HTTP schemas, admits operator commands only for future macro boundaries, and observes canonical publications on `/api/v1/publications`. HTTP admission returns 202; the final canonical acknowledgement is read separately after deterministic boundary processing.
 
+The ASGI lifespan starts one paced owner task. With the default profile it completes one logical 1 s macro per wall-clock second, publishes while idle, drains admitted commands only at their apply boundary, and finishes any started macro before shutdown. The viewer updates its command field to the next future macro tick after every publication. `--pace-seconds` may shorten or lengthen wall pacing for diagnostics without changing logical duration, phase order, child count, or canonical results.
+
 The in-memory owner supports exactly one ASGI worker and rejects auto-reload. Viewer queues hold 64 publication frames. Slow telemetry is coalesced by signal; discrete overflow disconnects that viewer with a resynchronization reason. Viewer connections, render rate, queues, drops, and wall-clock diagnostics cannot change canonical simulation results.
 
 ## Implemented boundaries

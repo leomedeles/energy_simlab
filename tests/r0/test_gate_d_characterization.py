@@ -6,7 +6,7 @@ import pytest
 
 from energy_simlab.adapters.serialization import canonical_json_bytes
 from energy_simlab.application import IntegratedRuntimeOwner
-from energy_simlab.bootstrap import compose_server
+from energy_simlab.bootstrap import ServerConfiguration, compose_server
 from energy_simlab.contracts.enums import CommandAuthority, CommandKind, Unit
 from energy_simlab.contracts.records import CommandV1
 
@@ -30,7 +30,9 @@ def _power_command() -> CommandV1:
 
 
 async def _observe_lifespan_idle_state() -> tuple[int, int]:
-    components = compose_server()
+    components = compose_server(
+        ServerConfiguration(pacing_interval_seconds=0.01)
+    )
     inbound: asyncio.Queue[dict[str, str]] = asyncio.Queue()
     outbound: asyncio.Queue[dict[str, str]] = asyncio.Queue()
     await inbound.put({"type": "lifespan.startup"})
@@ -50,7 +52,7 @@ async def _observe_lifespan_idle_state() -> tuple[int, int]:
     )
     startup = await asyncio.wait_for(outbound.get(), timeout=1.0)
     assert startup["type"] == "lifespan.startup.complete"
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.04)
     observed = (
         components.runtime.scheduler.current_tick,
         len(components.evidence_sink.publications),
@@ -62,10 +64,6 @@ async def _observe_lifespan_idle_state() -> tuple[int, int]:
     return observed
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="GD-002: the pre-correction ASGI lifespan starts no runtime-owner task",
-)
 def test_gd002_launched_composition_advances_and_publishes_while_idle() -> None:
     tick, publication_count = asyncio.run(_observe_lifespan_idle_state())
     assert tick >= 10

@@ -64,6 +64,7 @@
     document.querySelector('#tick').textContent = publication.logical_tick;
     document.querySelector('#sequence').textContent = publication.sequence;
     document.querySelector('#schema').textContent = publication.schema_version;
+    document.querySelector('#applyTick').value = publication.logical_tick + 10;
   };
   let sequence = 0;
   document.querySelector('#dispatch').addEventListener('submit', async event => {

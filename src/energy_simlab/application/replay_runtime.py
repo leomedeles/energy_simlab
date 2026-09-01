@@ -96,10 +96,14 @@ class ReplayRuntime:
     runtime_profile = "cpython-3.14.7-windows-x86_64"
     canonicalization_profile = "python-json-v1"
     excluded_infrastructure_state = (
+        "asgi_pacing_task",
+        "asgi_stop_event",
         "http_connections",
         "pacer_wall_clock",
+        "server_sleep_history",
         "viewer_fanout_queues",
         "viewer_render_state",
+        "websocket_protocol_state",
     )
 
     def __init__(self, *, record_encoder: RecordEncoder) -> None:

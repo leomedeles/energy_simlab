@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from contextlib import AbstractAsyncContextManager
 from typing import Protocol, cast
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -39,8 +41,13 @@ def create_app(
     application: ApiApplication,
     fanout: BoundedViewerFanout,
     viewer_html: str,
+    lifespan: Callable[[FastAPI], AbstractAsyncContextManager[None]] | None = None,
 ) -> FastAPI:
-    app = FastAPI(title="Energy SimLab TT-000", version="1.0.0")
+    app = FastAPI(
+        title="Energy SimLab TT-000",
+        version="1.0.0",
+        lifespan=lifespan,
+    )
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     async def viewer() -> str:

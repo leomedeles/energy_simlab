@@ -7,10 +7,12 @@ from .fanout import (
     ViewerPublicationFrame,
     ViewerSession,
 )
+from .lifecycle import RuntimePacingLifecycle
 
 __all__ = [
     "ApiApplication",
     "BoundedViewerFanout",
+    "RuntimePacingLifecycle",
     "ViewerDisconnected",
     "ViewerPublicationFrame",
     "ViewerSession",

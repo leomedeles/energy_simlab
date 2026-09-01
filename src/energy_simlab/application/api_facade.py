@@ -44,17 +44,6 @@ class RuntimeApiFacade:
         self.runtime.pending_ingress.sort(key=self._ingress_key)
         return command
 
-    def drain_for_tick(self, logical_tick: int) -> tuple[CommandV1, ...]:
-        if logical_tick % self.runtime.scenario.configuration.macro_ticks:
-            raise ValueError("ingress drains only at macro boundaries")
-        eligible = tuple(
-            item for item in self.runtime.pending_ingress if item.apply_tick == logical_tick
-        )
-        self.runtime.pending_ingress = [
-            item for item in self.runtime.pending_ingress if item.apply_tick != logical_tick
-        ]
-        return eligible
-
     def get_acknowledgement(self, command_id: str) -> AcknowledgementV1 | None:
         return next(
             (

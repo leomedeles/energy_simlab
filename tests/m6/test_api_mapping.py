@@ -86,11 +86,9 @@ def test_http_request_acknowledgement_and_reads_map_through_edge_dtos():
     assert admitted == command
     assert type(admitted) is CommandV1
 
-    eligible = components.application.drain_for_tick(10)
-    assert eligible == (command,)
-    owner = IntegratedRuntimeOwner(runtime=components.runtime)
-    owner.run_until(10)
-    owner.advance_one_macro(eligible)
+    components.owner.run_until(10)
+    result = components.owner.advance_one_macro()
+    assert tuple(item.command_id for item in result.acknowledgements) == (command.id,)
     status, body = asyncio.run(
         asgi_request(
             components.asgi_app,
@@ -133,7 +131,13 @@ def test_live_ingress_is_future_boundary_only_and_arrival_order_is_not_execution
     )
     facade.admit_command(later_id)
     facade.admit_command(earlier_id)
-    assert facade.drain_for_tick(10) == (earlier_id, later_id)
+    owner = IntegratedRuntimeOwner(runtime=runtime)
+    owner.run_until(10)
+    result = owner.advance_one_macro()
+    assert tuple(item.command_id for item in result.acknowledgements) == (
+        earlier_id.id,
+        later_id.id,
+    )
 
     stale = CommandV1(
         id="CMD-API-STALE",
@@ -160,6 +164,7 @@ def test_in_memory_owner_rejects_multiple_workers_and_auto_reload():
     for kwargs, message in [
         ({"workers": 2}, "exactly one"),
         ({"reload": True}, "auto-reload"),
+        ({"pacing_interval_seconds": 0.0}, "pacing interval"),
     ]:
         try:
             ServerConfiguration(**kwargs)

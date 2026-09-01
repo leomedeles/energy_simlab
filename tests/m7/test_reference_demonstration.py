@@ -34,10 +34,10 @@ def test_fast_and_paced_reference_scenario_match_exact_golden_trace_and_outcomes
         "53650f4800bf07fe37fc50a9a5525fd16d047b6f8dc4a4fb3b7aa170623d1993"
     )
     assert sha256(fast.snapshot_at_90).hexdigest() == (
-        "293ab69120e2509f21da6263f2506f7859945a15af5d0998be4f71f02d5fa680"
+        "774f3ee674dcb4af153015b4af7783f9754f221a18e0488077d891e87ff841d9"
     )
     assert sha256(fast.final_snapshot).hexdigest() == (
-        "2ceff36d401be4449f4b5e19814d86845e3a02ca52b9726d6aa05542476426c0"
+        "98453c1efd2773d1cf9d3633f95dcda49cfdf54a9edc6400d38a208a78f4516d"
     )
     assert fast.final_operating_mode == "ISLANDED_UNSUPPORTED"
     assert fast.final_applied_power_mw == 0.0
@@ -85,7 +85,7 @@ def test_alternative_suffix_is_repeatable_and_rejection_is_the_causal_divergence
         "98c17a30e824810d81eaf614902cc14b8bfaed48d34559a3c65a9b53213f843d"
     )
     assert sha256(first.final_snapshot).hexdigest() == (
-        "bb092858f76a70deda480ee3464bc293c066c40fa511e2436989dc76de9d8dd7"
+        "7992c44ce5cb6af438e27b373b6b12c03978e3a51cbfd4c3aa1588388ddb8bec"
     )
     assert first.alarm_active and not first.alarm_acknowledged
     alternative_ack = next(

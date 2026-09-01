@@ -16,6 +16,14 @@ Approved — Gate C approved; prescriptive for Stage D milestone implementation.
 
 This file is the approved, prescriptive architecture for Stage D milestone implementation. Gate C approval authorizes implementation on the named feature branch; it does not validate the node or approve Gate D. The substantive content of the approved RESEARCH_REPORT.md must not be changed to make implementation results appear consistent with this specification.
 
+### 1.1 Corrective Gate C amendment
+
+Gate D was not approved on 2026-09-01 after human reproduction confirmed missing WebSocket packaging, an inert launched runtime and commandless scheduler advancement without held-input physics.
+
+The human project owner approved [FEATURE_CONTEXT_AMENDMENT_01.md](FEATURE_CONTEXT_AMENDMENT_01.md) on 2026-09-01. That amendment supplements this original context and is prescriptive wherever it addresses the integrated runtime owner, complete macro semantics, zero-order hold, ASGI lifecycle, live ingress, publications, snapshots, dependency packaging and corrective tests.
+
+`docs/decisions/ADR-0002-integrated-runtime-owner-and-server-lifecycle.md` is accepted through that approval. Corrective Stage D is authorized on `feature/TT-000-vertical-slice-0`; the current requested developer assignment is R0 through R2 sequentially. Gate D remains not approved, and TT-000 remains unvalidated, unintegrated and locked.
+
 ## 2. Node identity and proposed Git branch
 
 | Field | Selection |

@@ -2,19 +2,21 @@
 
 ## 1. Status and authority
 
-**Draft — awaiting human Gate C amendment approval. Corrective Stage D implementation is blocked.**
+**Approved — human Gate C amendment approval recorded on 2026-09-01. Prescriptive for corrective Stage D implementation.**
 
 - Original Gate C approval: 2026-08-26.
 - Gate D review attempt: 2026-09-01.
 - Gate D result: not approved; corrective work required.
 - Reviewed implementation baseline: `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85`.
 - Tracking issue: [#1](https://github.com/leomedeles/energy_simlab/issues/1).
-- Proposed decision record: `docs/decisions/ADR-0002-integrated-runtime-owner-and-server-lifecycle.md`.
-- Implementation branch after approval: `feature/TT-000-vertical-slice-0`.
+- Corrective Gate C amendment: approved by the human project owner on 2026-09-01.
+- Accepted decision record: `docs/decisions/ADR-0002-integrated-runtime-owner-and-server-lifecycle.md`.
+- Corrective implementation branch: `feature/TT-000-vertical-slice-0`.
+- Current requested developer scope: R0 through R2, sequentially.
 
-This amendment is append-only governance evidence. It does not erase or retroactively revoke the original Gate C approval, the historical developer test results, or the completed component implementations. If approved, it supplements the original `FEATURE_CONTEXT.md` wherever the integrated runtime path, server lifecycle, commandless advancement, WebSocket packaging, or end-to-end evidence is concerned. All original requirements not explicitly amended remain binding.
+This amendment is append-only governance evidence. It does not erase or retroactively revoke the original Gate C approval, the historical developer test results, or the completed component implementations. It supplements the original `FEATURE_CONTEXT.md` wherever the integrated runtime path, server lifecycle, commandless advancement, WebSocket packaging, or end-to-end evidence is concerned. All original requirements not explicitly amended remain binding.
 
-No implementation code, dependency change, generated lock update, or node unlock is authorized by this draft. The human project owner must approve the checklist in section 13 before corrective Stage D work begins.
+Human approval of this amendment authorizes corrective Stage D milestones R0–R3 under their sequential stop conditions. The current requested developer assignment is limited to R0–R2. This approval does not approve Gate D, unlock TT-000, authorize integration, or permit `TECH_TREE.md` updates.
 
 ## 2. Reason for reopening Gate C
 
@@ -244,7 +246,7 @@ During corrective implementation:
 
 ## 13. Human Gate C amendment checklist
 
-Before corrective Stage D begins, the human project owner must explicitly approve:
+The human project owner explicitly approved every item below on 2026-09-01:
 
 - [x] The failed Gate D evidence and return to corrective Stage C are accepted.
 - [x] The correction remains TT-000 scope and does not create a new node.
@@ -260,8 +262,8 @@ Before corrective Stage D begins, the human project owner must explicitly approv
 
 Approval record:
 
-- Approved by: Leo  
-- Approval date: 01.09.2026
-- Approval statement/reference: Looks fine
+- Approved by: Leo, human project owner
+- Approval date: 2026-09-01
+- Approval statement/reference: The human project owner validated Feature Context Amendment 01 and requested documentation authorization for developer execution of R0 through R2.
 
-Until this checklist is approved and recorded in `PROGRESS.md`, implementation remains blocked.
+This approval is recorded in `PROGRESS.md`. Corrective Stage D is authorized. R0 is the starting milestone; the developer may execute R0, R1 and R2 sequentially, stopping on any failed gate or contradicted assumption. R3 remains approved by this amendment but is outside the immediate requested developer assignment.

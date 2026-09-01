@@ -4,6 +4,8 @@ This learning-first laboratory now contains the implementation of the approved T
 
 TT-000 demonstrates deterministic logical time, two BESS fidelity levels, topology and unsupported-island handling, typed commands/telemetry/alarms, complete snapshots with branching replay, and an isolated HTTP/WebSocket viewer edge.
 
+Corrective Stage D milestones R0–R3 are implemented on the feature branch and the post-correction evidence package is ready for human review. This is not Gate D approval: TT-000 remains unvalidated, unintegrated, inactive and locked, and GitHub issue #1 remains open.
+
 ## Developer setup
 
 The exact replay profile is CPython 3.14.7 on Windows x86-64. From PowerShell:
@@ -41,6 +43,8 @@ The alternative deterministic continuation is:
 ```
 
 The approved scenario applies +0.4 MW to the fallback model, activates the detailed model, requests -1.0 MW, opens PCC, captures at tick 90, then either acknowledges the active island alarm (suffix A) or rejects an island dispatch with `TARGET_MODE_UNAVAILABLE` (suffix B). Golden hashes and outcomes are asserted in `tests/m7/test_reference_demonstration.py`.
+
+The corrective owner executes every elapsed macro. The current same-profile suffix-A trace/final-snapshot hashes are `53650f4800bf07fe37fc50a9a5525fd16d047b6f8dc4a4fb3b7aa170623d1993` / `98453c1efd2773d1cf9d3633f95dcda49cfdf54a9edc6400d38a208a78f4516d`; suffix B is `98c17a30e824810d81eaf614902cc14b8bfaed48d34559a3c65a9b53213f843d` / `7992c44ce5cb6af438e27b373b6b12c03978e3a51cbfd4c3aa1588388ddb8bec`. The pre-correction hashes remain preserved in `PROGRESS.md` and `VALIDATION_REPORT.md` as failed Gate D evidence.
 
 ## HTTP/WebSocket viewer
 

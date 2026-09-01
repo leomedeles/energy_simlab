@@ -2,15 +2,15 @@
 
 ## Status
 
-Human Gate D review performed on 2026-09-01. **Gate D is not approved; corrective work and revalidation are required.**
+Human Gate D review performed on 2026-09-01. **Gate D is not approved. Corrective R0–R3 developer evidence is appended for a new human review.**
 
 TT-000 remains unvalidated, unintegrated and locked. The historical developer evidence is preserved below, but Gate D reproduction showed that it does not cover the launched integrated runtime.
 
 ## Verdict
 
-**FAIL — corrective work required before Gate D may be attempted again.**
+**FAIL AT THE REVIEWED BASELINE — Gate D remains not approved pending human revalidation.**
 
-This verdict applies to implementation baseline `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85` on `feature/TT-000-vertical-slice-0`. It does not reject the original learning charter or research. The project returned to Stage C for the narrow corrective architecture amendment in `FEATURE_CONTEXT_AMENDMENT_01.md`. The human project owner approved that amendment and ADR-0002 on 2026-09-01; corrective Stage D is now authorized for sequential milestones R0–R3, with R0–R2 as the current requested developer scope.
+This verdict applies to implementation baseline `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85` on `feature/TT-000-vertical-slice-0`. It does not reject the original learning charter or research. The project returned to Stage C for the narrow corrective architecture amendment in `FEATURE_CONTEXT_AMENDMENT_01.md`. The human project owner approved that amendment and ADR-0002 on 2026-09-01. Corrective R0–R3 implementation is now complete as a developer evidence package, but only a new human Gate D review may change this verdict.
 
 ## Human Gate D review baseline
 
@@ -78,7 +78,7 @@ The findings block the node-specific Definition of Done and learning questions 1
 - publication from the continuously operating core to the viewer;
 - a clean locked environment capable of the documented WebSocket path.
 
-Gate D is therefore not approved. Corrective work remains inside TT-000. The approved history is not rewritten: the original Gate C decision and developer test results remain recorded. Stage C was reopened for an explicit integrated-runtime amendment and ADR; the human project owner approved both on 2026-09-01. Corrective Stage D is authorized, beginning with R0 and proceeding sequentially through the currently requested R1 and R2 scope.
+Gate D is therefore not approved. Corrective work remains inside TT-000. The approved history is not rewritten: the original Gate C decision and developer test results remain recorded. Stage C was reopened for an explicit integrated-runtime amendment and ADR; the human project owner approved both on 2026-09-01. The post-correction developer evidence is appended below and awaits independent human review.
 
 
 ## Learning-question evidence for the reviewer
@@ -181,6 +181,64 @@ TT-000 supports aggregate active-power and usable-energy bookkeeping only within
 - During M5, a dictionary-annotation boundary test rejected the first shared phase-priority representation; it was replaced by a closed-enum function without changing order.
 - During M7, the first clean-install instruction incorrectly added `--require-hashes` to a version-pinned lock that does not contain artifact hashes. The README was corrected to the actual approved install command, and the isolated install/full suite then passed.
 
+## Post-correction R0–R3 developer evidence
+
+### Status boundary
+
+Corrective developer milestones R0–R3 passed on `feature/TT-000-vertical-slice-0`. This section is an appended developer evidence package, not an amendment to the failed baseline observations and not a Gate D verdict. Issue #1 remains open. TT-000 remains unvalidated, unintegrated, inactive and locked.
+
+### Corrective commits
+
+| Milestone | Implementation commit | Evidence meaning |
+|---|---|---|
+| R0 | `a400367` | Declares/locks `wsproto 1.3.2`, updates MIT license inventory, proves a real WebSocket upgrade, and preserves strict GD-002/GD-003 characterization tests |
+| R1 | `1364e25` | Introduces the integrated synchronous owner, complete macro/ZOH behavior, shared fast/paced path, publications and migrated demonstration/replay evidence |
+| R2 | `1cb4b9b` | Adds the single ASGI lifespan pacing task, admission-only HTTP edge, automatic owner drain, final acknowledgements, live WebSocket progression and clean shutdown |
+
+Milestone evidence records are committed separately in `PROGRESS.md`. R3 consists of the regression, clean-lock, reproduction and documentation package reported here; it does not introduce another domain behavior change.
+
+### Resolution of the confirmed blockers
+
+| Finding | Post-correction evidence | Developer disposition for review |
+|---|---|---|
+| GD-001 — missing WebSocket backend | `wsproto==1.3.2` is direct API metadata and lock content; clean CPython 3.14.7 install and real Uvicorn HTTP-101 test pass | Corrected; human revalidation pending |
+| GD-002 — launched server inert | Lifespan starts one pacing task; idle ticks/publications increase; a real HTTP POST becomes a final acknowledgement and appears in trace/WebSocket publication without manual execution | Corrected; human revalidation pending |
+| GD-003 — commandless macro skips physics | Two +0.4 MW held fallback macros end at `0.9997777777777785 MWh`, matching `0.9997777777777782 MWh` within `1e-12`; publication sequence reaches 3 | Corrected; human revalidation pending |
+
+### R3 automated regression evidence
+
+| Command/layer | Post-correction result |
+|---|---|
+| Affected M0, M1, M3, M6, M7 plus R0–R2 | 171 passed in 13.41 s |
+| Integrated fast/paced, viewer and real-server subset | 8 passed in 7.76 s |
+| Full local suite | 195 passed in 20.95 s |
+| Fresh CPython 3.14.7 Windows x86-64 lock, wheel install and full suite | `pip check` clean; 195 passed in 18.05 s; `wsproto 1.3.2` present |
+| Static/import/patch integrity | `compileall`, `pip check` and `git diff --check` passed |
+
+The clean evidence environment was created outside the workspace from `requirements.lock`, installed the project wheel with `--no-deps`, ran the full suite, printed the exact runtime/backend versions, and was removed afterward.
+
+### Fast/paced and viewer evidence
+
+- Real-wall paced suffix A and fast suffix A produced identical JSON outcomes, trace hash `53650f4800bf07fe37fc50a9a5525fd16d047b6f8dc4a4fb3b7aa170623d1993`, final snapshot hash `98453c1efd2773d1cf9d3633f95dcda49cfdf54a9edc6400d38a208a78f4516d`, and final energy `1.000037170499217 MWh`.
+- Fast suffix B produced trace `98c17a30e824810d81eaf614902cc14b8bfaed48d34559a3c65a9b53213f843d` and final snapshot `7992c44ce5cb6af438e27b373b6b12c03978e3a51cbfd4c3aa1588388ddb8bec` at the same final physical energy, while alarm acknowledgement state diverged as approved.
+- Tick-90 snapshot hash is `774f3ee674dcb4af153015b4af7783f9754f221a18e0488077d891e87ff841d9` for both suffixes.
+- Zero, one, multiple and slow viewer patterns through the live lifespan composition preserve byte-identical canonical trace prefixes for identical logical inputs.
+- The real Uvicorn/wsproto test observes increasing WebSocket ticks/sequences, admits a future HTTP command, reads its `ACCEPTED` acknowledgement and trace, and finds the acknowledgement in the canonical macro publication.
+
+### Golden-change classification
+
+The historical hashes in the human Gate D baseline remain valid evidence for the previously tested scripted path and are not overwritten.
+
+The corrected trace and energy changed because accepted inputs now remain held and physics executes during every elapsed macro, including formerly skipped 20→30, 30→40, 50→80 and post-restore intervals. This is the approved GD-003 corrective behavior, not a model equation, unit, tolerance or schema migration. The R2 snapshot hashes changed again only because the envelope's explicit excluded-infrastructure list now names ASGI task/stop, wall sleep and WebSocket protocol state. Canonical traces and numerical state did not change in R2.
+
+### Remaining risks for the Gate D reviewer
+
+- The tiny synchronous macro currently runs on the ASGI event loop as approved. R2 records overruns and resets the next wall deadline; measured future workloads that materially block the loop require a new Gate C decision rather than adding concurrent domain mutation.
+- Live HTTP admission still requires an explicitly future macro tick. At fast pacing a human may miss a selected boundary; the viewer now advances its form to the next future tick, while scripted tests use explicit lead time.
+- Exact snapshot/trace bytes remain guaranteed only for the declared CPython 3.14.7 Windows x86-64 profile and locked versions.
+- The new golden hashes require independent human reproduction before they may replace failed-baseline evidence in any validation conclusion.
+- All original physical-model limitations and rejected compliance/production claims remain unchanged.
+
 ## Recommended maturity update
 
 No maturity update is proposed by the developer. `TECH_TREE.md` and the validated architecture ledger remain unchanged pending Gate D.
@@ -189,4 +247,4 @@ No maturity update is proposed by the developer. `TECH_TREE.md` and the validate
 
 **Not approved on 2026-09-01 by the human project owner acting as Gate D reviewer.**
 
-Corrective architecture clarification was approved on 2026-09-01. Corrective implementation and revalidation remain required. R0–R2 are the current requested developer scope. TT-000 remains unvalidated, unintegrated, inactive and locked; `TECH_TREE.md` and the validated architecture ledger must remain unchanged. The failed evidence must be preserved when post-correction results are appended.
+Corrective architecture clarification was approved on 2026-09-01 and corrective R0–R3 developer evidence is now appended. Human revalidation remains required. TT-000 remains unvalidated, unintegrated, inactive and locked; `TECH_TREE.md` and the validated architecture ledger remain unchanged. The failed evidence above is preserved.

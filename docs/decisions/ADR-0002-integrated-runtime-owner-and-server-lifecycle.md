@@ -2,9 +2,9 @@
 
 ## Status
 
-Proposed — awaiting human approval of `FEATURE_CONTEXT_AMENDMENT_01.md`.
+Accepted — approved by the human project owner through `FEATURE_CONTEXT_AMENDMENT_01.md` on 2026-09-01.
 
-This ADR is not implementation authorization. If the amendment is approved, this decision becomes accepted for TT-000 corrective Stage D work. Until then, the original Gate C architecture remains the last approved design and implementation is blocked.
+This decision is prescriptive for TT-000 corrective Stage D milestones R0–R3. The current requested developer assignment is R0 through R2, executed sequentially. Acceptance of this ADR does not approve Gate D or unlock/integrate TT-000.
 
 ## Date
 

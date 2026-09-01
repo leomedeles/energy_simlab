@@ -10,7 +10,7 @@ TT-000 remains unvalidated, unintegrated and locked. The historical developer ev
 
 **FAIL — corrective work required before Gate D may be attempted again.**
 
-This verdict applies to implementation baseline `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85` on `feature/TT-000-vertical-slice-0`. It does not reject the original learning charter or research. The project returns to Stage C for the narrow corrective architecture amendment in `FEATURE_CONTEXT_AMENDMENT_01.md`.
+This verdict applies to implementation baseline `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85` on `feature/TT-000-vertical-slice-0`. It does not reject the original learning charter or research. The project returned to Stage C for the narrow corrective architecture amendment in `FEATURE_CONTEXT_AMENDMENT_01.md`. The human project owner approved that amendment and ADR-0002 on 2026-09-01; corrective Stage D is now authorized for sequential milestones R0–R3, with R0–R2 as the current requested developer scope.
 
 ## Human Gate D review baseline
 
@@ -78,7 +78,7 @@ The findings block the node-specific Definition of Done and learning questions 1
 - publication from the continuously operating core to the viewer;
 - a clean locked environment capable of the documented WebSocket path.
 
-Gate D is therefore not approved. Corrective work remains inside TT-000. The approved history is not rewritten: the original Gate C decision and developer test results remain recorded, while Stage C is reopened for an explicit integrated-runtime amendment and ADR. Corrective implementation is blocked until the human project owner approves that amendment.
+Gate D is therefore not approved. Corrective work remains inside TT-000. The approved history is not rewritten: the original Gate C decision and developer test results remain recorded. Stage C was reopened for an explicit integrated-runtime amendment and ADR; the human project owner approved both on 2026-09-01. Corrective Stage D is authorized, beginning with R0 and proceeding sequentially through the currently requested R1 and R2 scope.
 
 
 ## Learning-question evidence for the reviewer
@@ -174,8 +174,8 @@ TT-000 supports aggregate active-power and usable-energy bookkeeping only within
 ## Deviations and corrective actions
 
 - Gate D confirmed GD-001, GD-002 and GD-003 against the reviewed baseline.
-- Stage C is reopened for `FEATURE_CONTEXT_AMENDMENT_01.md`; implementation remains blocked pending human approval.
-- Proposed `ADR-0002` defines the single owner and ASGI lifecycle decision for review.
+- Stage C was reopened for `FEATURE_CONTEXT_AMENDMENT_01.md`; the human project owner approved it on 2026-09-01 and authorized corrective Stage D.
+- Accepted `ADR-0002` defines the binding single-owner and ASGI lifecycle decision.
 - The dependency correction, runtime behavior change, integration fix and new end-to-end tests must be implemented as corrective TT-000 work rather than deferred to a new node.
 - During M0, one whitespace-sensitive documentation assertion was corrected without changing the ADR.
 - During M5, a dictionary-annotation boundary test rejected the first shared phase-priority representation; it was replaced by a closed-enum function without changing order.
@@ -189,4 +189,4 @@ No maturity update is proposed by the developer. `TECH_TREE.md` and the validate
 
 **Not approved on 2026-09-01 by the human project owner acting as Gate D reviewer.**
 
-Corrective architecture clarification, implementation and revalidation are required. TT-000 remains unvalidated, unintegrated, inactive and locked. `TECH_TREE.md` and the validated architecture ledger must remain unchanged. The failed evidence must be preserved when post-correction results are appended.
+Corrective architecture clarification was approved on 2026-09-01. Corrective implementation and revalidation remain required. R0–R2 are the current requested developer scope. TT-000 remains unvalidated, unintegrated, inactive and locked; `TECH_TREE.md` and the validated architecture ledger must remain unchanged. The failed evidence must be preserved when post-correction results are appended.

@@ -12,9 +12,9 @@ Stage D — Corrective Milestone Implementation
 | Gate B — research | Approved by human project owner on 2026-08-26 | `RESEARCH_REPORT.md` |
 | Gate C — original feature architecture | Approved by human project owner on 2026-08-26 | `FEATURE_CONTEXT.md` |
 | Original implementation milestones | M0–M7 developer gates historically passed; evidence preserved but insufficient for integrated completion | Milestone evidence below; 180-test and suffix results |
-| Gate D — validation | **Not approved on 2026-09-01; corrective work required** | `VALIDATION_REPORT.md`; GitHub issue #1; manual reproduction |
+| Gate D — validation | **Not approved on 2026-09-01; corrective evidence ready for re-review** | `VALIDATION_REPORT.md`; GitHub issue #1; manual and post-correction evidence |
 | Corrective Gate C amendment | **Approved by human project owner on 2026-09-01** | `FEATURE_CONTEXT_AMENDMENT_01.md`; accepted `ADR-0002` |
-| Corrective implementation | Authorized; R0–R2 passed and R3 is active | Approved milestones R0–R3; human owner requested R0–R3 on 2026-09-01 |
+| Corrective implementation | R0–R3 developer gates passed; human review pending | Approved amendment; corrective commits and evidence below |
 
 ## Implementation state
 
@@ -22,9 +22,9 @@ Stage D — Corrective Milestone Implementation
 - Preserved pre-correction baseline: `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85`
 - Corrective Gate C approval: Human project owner, 2026-09-01
 - Accepted corrective decision: `ADR-0002-integrated-runtime-owner-and-server-lifecycle.md`
-- Active milestone: R3 — Regression and Gate D package
-- Current developer authorization: Execute R0 through R3 sequentially; stop on a failed gate or contradicted assumption
-- Implementation status: R0–R2 passed; R3 is active
+- Active milestone: None — corrective developer work stopped for human review
+- Current developer authorization: R0 through R3 completed sequentially
+- Implementation status: Corrective evidence package ready for human review; Gate D not approved
 - Node status: Unvalidated, unintegrated, inactive and locked
 
 ## Completed
@@ -58,12 +58,12 @@ Stage D — Corrective Milestone Implementation
 - [x] R0 — Characterize and repair the executable profile passes.
 - [x] R1 — Integrated deterministic runtime owner passes.
 - [x] R2 — Operational ASGI composition passes.
-- [ ] R3 — Regression and Gate D package passes.
+- [x] R3 — Regression and Gate D package passes.
 - [ ] Gate D revalidation passes.
 
 ## Active work
 
-Corrective Stage D is active. R0 through R2 passed; R3 is the current milestone. The human project owner requested execution through R3 on 2026-09-01. Stop and return to the appropriate gate if a milestone fails or evidence contradicts the approved amendment.
+Corrective Stage D developer work is complete through R3 and has stopped for human review. Passing corrective developer gates does not approve Gate D. No integration, tree/architecture-ledger update, issue closure, merge or next-node work is authorized.
 
 ## Corrective Gate D loop
 
@@ -219,6 +219,48 @@ Decisions and deviations:
 - The async task, stop event, wall origin/sleep history, viewer queues and WebSocket protocol state are explicitly excluded from snapshots; the scheduler boundary, held intent, pending canonical ingress and publication sequence remain included.
 - Post-R2 trace hashes remain the R1 hashes because lifecycle state is noncanonical. Snapshot hashes changed only through the expanded explicit exclusion list: tick-90 `774f3ee674dcb4af153015b4af7783f9754f221a18e0488077d891e87ff841d9`; suffix-A final `98453c1efd2773d1cf9d3633f95dcda49cfdf54a9edc6400d38a208a78f4516d`; suffix-B final `7992c44ce5cb6af438e27b373b6b12c03978e3a51cbfd4c3aa1588388ddb8bec`.
 - No canonical contract migration, worker/thread expansion, concurrent domain callback or new physical behavior was introduced.
+
+### R3 — Regression and Gate D package
+
+- Status: Passed (developer evidence gate only; human Gate D review pending)
+- Evidence/package commit: `c7ccc71` (`docs(TT-000): package R3 corrective review evidence`)
+- Prerequisite: R2 passed at `1cb4b9b`; R2 evidence recorded at `27aa642`
+
+Commands and results:
+
+1. `.\.venv\Scripts\python.exe -m pytest tests/m0 tests/m1 tests/m3 tests/m6 tests/m7 tests/r0 tests/r1 tests/r2 -q`
+   - Passed: 171 tests in 13.41 s.
+2. `.\.venv\Scripts\python.exe -m pytest tests/m7/test_reference_demonstration.py tests/m7/test_reference_viewer_patterns.py tests/r2/test_asgi_lifecycle.py tests/r2/test_live_server.py -q`
+   - Passed: 8 integrated fast/paced, viewer and real-server tests in 7.76 s.
+3. `.\.venv\Scripts\python.exe -m pytest -q`
+   - Passed: 195 tests in 20.95 s.
+4. `.\.venv\Scripts\python.exe -m energy_simlab.bootstrap.demonstration --mode fast --suffix A`, the same command with `--mode paced`, and fast suffix B.
+   - Passed: fast and actual-wall-paced suffix A emitted identical outcome JSON, trace `53650f4800bf07fe37fc50a9a5525fd16d047b6f8dc4a4fb3b7aa170623d1993` and final snapshot `98453c1efd2773d1cf9d3633f95dcda49cfdf54a9edc6400d38a208a78f4516d`. Fast suffix B emitted trace `98c17a30e824810d81eaf614902cc14b8bfaed48d34559a3c65a9b53213f843d` and final snapshot `7992c44ce5cb6af438e27b373b6b12c03978e3a51cbfd4c3aa1588388ddb8bec`. Both end at `1.000037170499217 MWh`.
+5. Corrected commandless-macro reproduction through `IntegratedRuntimeOwner`.
+   - Passed: tick 30; energy at tick 20 `0.9998888888888893 MWh`; energy at tick 30 `0.9997777777777785 MWh`; independent expected value `0.9997777777777782 MWh`; advancement true; `1e-12` comparison true; publication sequence 3.
+6. `.\.venv\Scripts\python.exe -m pytest tests/r2/test_live_server.py -q`
+   - Passed: 1 real Uvicorn/wsproto live-server reproduction in 1.67 s.
+7. Fresh temporary CPython 3.14.7 Windows x86-64 environment: install `requirements.lock`, build/install the project wheel with `--no-deps`, run `pip check`, full pytest, and print runtime/wsproto versions.
+   - Passed: lock installed without manual additions; `pip check` clean; 195 tests in 18.05 s; CPython 3.14.7 and `wsproto 1.3.2`; temporary evidence environment removed afterward.
+8. After the R3 README/validation append: `.\.venv\Scripts\python.exe -m pytest tests/m0 tests/m7 -q` and `git diff --check`.
+   - Passed: 127 tests in 5.62 s and no patch-integrity errors.
+
+Gate coverage:
+
+- Every required R0–R2 corrective behavior is covered in the affected and full regression suites.
+- Fast and real-wall paced modes share the owner and reproduce identical canonical suffix-A evidence.
+- Zero, one, multiple and slow viewers remain canonical observers in both synchronous owner and live lifespan tests.
+- The real launched server establishes the locked WebSocket, advances while idle, executes admitted ingress, exposes the final acknowledgement/trace, publishes to the viewer and shuts down cleanly.
+- The corrected GD-003 reproduction proves held-input commandless advancement and publication on every macro.
+- A fresh clean-lock wheel install reproduces the full corrected suite.
+- `README.md` and `VALIDATION_REPORT.md` contain post-correction commands, hashes, blocker disposition, deviations and risks while retaining the failed Gate D baseline.
+
+Decisions, deviations and remaining risks:
+
+- R3 introduced no domain behavior, canonical contract, model, phase, timing or dependency change; it packages evidence from commits `a400367`, `1364e25` and `1cb4b9b`.
+- Historical failed Gate D results/hashes remain preserved. Corrected golden changes are classified in the R1/R2 sections and `VALIDATION_REPORT.md` rather than treated as implicit acceptance.
+- Remaining risks are the approved synchronous-ASGI-loop scalability boundary, live future-tick cut-off usability, same-profile byte portability limit, need for independent reproduction of new hashes, and all original physical/noncompliance limitations.
+- `TECH_TREE.md`, `ARCHITECTURE.md`, issue #1, the retrospective and Gate D state were not changed.
 
 ## Test evidence
 
@@ -493,16 +535,6 @@ Gate coverage:
 
 ## Next permitted action
 
-A developer agent may execute corrective milestones R0 through R2 sequentially under approved `FEATURE_CONTEXT_AMENDMENT_01.md` and accepted `ADR-0002`.
+The human project owner may review and independently reproduce the appended R0–R3 evidence for a new Gate D decision. Developer work stops here.
 
-The developer must:
-
-1. read the required repository documents and both corrective artifacts completely;
-2. confirm the feature branch and preserved baseline/history;
-3. execute R0 and its exit gate before beginning R1;
-4. execute R1 and its exit gate before beginning R2;
-5. execute R2 and its exit gate;
-6. update this file after every milestone with exact commits, commands, results, decisions and deviations;
-7. stop on failure, scope expansion, contract migration or contradicted assumptions.
-
-Do not execute R3 unless separately requested, approve Gate D, mark TT-000 validated/integrated/active/unlocked, populate the retrospective, update the canonical technology frontier, merge the feature branch, or begin another node.
+Until a separate human decision authorizes otherwise, do not approve Gate D, close issue #1, mark TT-000 validated/integrated/active/unlocked, populate the retrospective, update `TECH_TREE.md` or the validated architecture ledger, merge the feature branch, or begin another node.

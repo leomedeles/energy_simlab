@@ -14,7 +14,7 @@ Stage D — Corrective Milestone Implementation
 | Original implementation milestones | M0–M7 developer gates historically passed; evidence preserved but insufficient for integrated completion | Milestone evidence below; 180-test and suffix results |
 | Gate D — validation | **Not approved on 2026-09-01; corrective work required** | `VALIDATION_REPORT.md`; GitHub issue #1; manual reproduction |
 | Corrective Gate C amendment | **Approved by human project owner on 2026-09-01** | `FEATURE_CONTEXT_AMENDMENT_01.md`; accepted `ADR-0002` |
-| Corrective implementation | Authorized; R0–R1 passed and R2 is active | Approved milestones R0–R3; human owner requested R0–R3 on 2026-09-01 |
+| Corrective implementation | Authorized; R0–R2 passed and R3 is active | Approved milestones R0–R3; human owner requested R0–R3 on 2026-09-01 |
 
 ## Implementation state
 
@@ -22,9 +22,9 @@ Stage D — Corrective Milestone Implementation
 - Preserved pre-correction baseline: `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85`
 - Corrective Gate C approval: Human project owner, 2026-09-01
 - Accepted corrective decision: `ADR-0002-integrated-runtime-owner-and-server-lifecycle.md`
-- Active milestone: R2 — Operational ASGI composition
+- Active milestone: R3 — Regression and Gate D package
 - Current developer authorization: Execute R0 through R3 sequentially; stop on a failed gate or contradicted assumption
-- Implementation status: R0–R1 passed; R2 is active
+- Implementation status: R0–R2 passed; R3 is active
 - Node status: Unvalidated, unintegrated, inactive and locked
 
 ## Completed
@@ -57,13 +57,13 @@ Stage D — Corrective Milestone Implementation
 - [x] Corrective Stage D milestones R0–R3 authorized by the approved amendment.
 - [x] R0 — Characterize and repair the executable profile passes.
 - [x] R1 — Integrated deterministic runtime owner passes.
-- [ ] R2 — Operational ASGI composition passes.
+- [x] R2 — Operational ASGI composition passes.
 - [ ] R3 — Regression and Gate D package passes.
 - [ ] Gate D revalidation passes.
 
 ## Active work
 
-Corrective Stage D is active. R0 and R1 passed; R2 is the current milestone. The human project owner requested execution through R3 on 2026-09-01. R3 may not begin until R2 passes. Stop and return to the appropriate gate if a milestone fails or evidence contradicts the approved amendment.
+Corrective Stage D is active. R0 through R2 passed; R3 is the current milestone. The human project owner requested execution through R3 on 2026-09-01. Stop and return to the appropriate gate if a milestone fails or evidence contradicts the approved amendment.
 
 ## Corrective Gate D loop
 
@@ -181,6 +181,44 @@ Decisions and deviations:
 - Final energy changed from `0.9998446478818566 MWh` to `1.000037170499217 MWh`: +0.4 MW remains held through its commandless intervals, then the accepted -1.0 MW request remains held until the tick-80 safe-zero interlock; this is the approved correction rather than a tolerance or model migration.
 - A restored continuation uses a common deterministic pre-branch run lineage through tick 100, then assigns A/B lineage immediately before the first different command. This preserves separate final run IDs and the approved causal first-divergence property despite mandatory tick-100 publication.
 - No V1 canonical schema, sign convention, phase value, command authority, snapshot version or model identity changed.
+
+### R2 — Operational ASGI composition
+
+- Status: Passed
+- Implementation commit: `1cb4b9b` (`fix(TT-000): operate R2 ASGI runtime lifecycle`)
+- Prerequisite: R1 passed at `1364e25`; R1 evidence recorded at `738a684`
+
+Commands and results:
+
+1. `.\.venv\Scripts\python.exe -m pytest tests/r2 -q`
+   - Passed: 4 tests in 3.63 s, including a real Uvicorn/wsproto process and live HTTP/WebSocket interaction.
+2. First affected-regression run after explicitly expanding the snapshot infrastructure-exclusion inventory.
+   - Result: 169 passed and 2 M7 golden snapshot assertions failed. Canonical traces and numerical results were unchanged; only snapshot bytes changed because the envelope now explicitly names ASGI task, stop-event, server-sleep and WebSocket protocol state as excluded infrastructure. The snapshot hashes were re-characterized without changing a schema or tolerance.
+3. `.\.venv\Scripts\python.exe -m pytest tests/r0 tests/r1 tests/r2 tests/m0 tests/m1 tests/m3 tests/m6 tests/m7 -q`
+   - Passed after classification: 171 tests in 17.12 s.
+4. `.\.venv\Scripts\python.exe -m pytest -q`
+   - Passed: 195 tests in 20.46 s.
+5. `.\.venv\Scripts\python.exe -m pip check`, `.\.venv\Scripts\python.exe -m compileall -q src tests`, and `git diff --check`.
+   - Passed: no broken requirements, compilation errors or patch-integrity errors.
+
+Gate coverage:
+
+- FastAPI lifespan starts exactly one `RuntimePacingLifecycle` task around exactly one integrated owner.
+- The pacing task is the only ASGI-side caller of `advance_one_macro`; HTTP handlers only validate/admit or read immutable/canonical state, and the facade exposes no drain/execute operation.
+- Idle startup produces increasing ticks, canonical publication sequences and lossless evidence publications.
+- A real ASGI POST returns HTTP 202, then becomes an `ACCEPTED` final acknowledgement at its apply boundary without any test/manual drain or domain call.
+- A real Uvicorn process using locked `wsproto 1.3.2` accepts `/api/v1/publications`, emits increasing ticks/sequences, accepts a future HTTP command, exposes its final acknowledgement and trace, and includes the acknowledgement in its macro publication.
+- Zero, one, three and slow live viewer patterns preserve byte-identical canonical trace prefixes through the same logical boundary.
+- Shutdown signals and awaits the pacing task; the task reference is cleared, no macro remains in progress, the scheduler is quiescent and logical time ends on a macro boundary.
+- A late wall deadline records an infrastructure overrun and resets the next wall deadline without changing logical `dt`, child count or domain ordering.
+- The viewer now advances its command form to the next future macro tick after each publication.
+
+Decisions and deviations:
+
+- `--pace-seconds` is an infrastructure diagnostic/pacing option only. It never enters canonical state or changes the 1 s logical macro duration.
+- The async task, stop event, wall origin/sleep history, viewer queues and WebSocket protocol state are explicitly excluded from snapshots; the scheduler boundary, held intent, pending canonical ingress and publication sequence remain included.
+- Post-R2 trace hashes remain the R1 hashes because lifecycle state is noncanonical. Snapshot hashes changed only through the expanded explicit exclusion list: tick-90 `774f3ee674dcb4af153015b4af7783f9754f221a18e0488077d891e87ff841d9`; suffix-A final `98453c1efd2773d1cf9d3633f95dcda49cfdf54a9edc6400d38a208a78f4516d`; suffix-B final `7992c44ce5cb6af438e27b373b6b12c03978e3a51cbfd4c3aa1588388ddb8bec`.
+- No canonical contract migration, worker/thread expansion, concurrent domain callback or new physical behavior was introduced.
 
 ## Test evidence
 

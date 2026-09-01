@@ -2,7 +2,7 @@
 
 ## Current stage
 
-Stage D — Milestone Implementation
+Stage C — Corrective Feature Architecture, reopened after failed Gate D validation
 
 ## Gate status
 
@@ -10,15 +10,19 @@ Stage D — Milestone Implementation
 |---|---|---|
 | Gate A — learning charter | Approved by human project owner | `NODE_CONTEXT.md` |
 | Gate B — research | Approved by human project owner on 2026-08-26 | `RESEARCH_REPORT.md` |
-| Gate C — feature architecture | Approved by human project owner on 2026-08-26 | `FEATURE_CONTEXT.md` |
-| Implementation milestones | M0–M7 passed; implementation evidence ready for review | Approved `FEATURE_CONTEXT.md` and milestone evidence below |
-| Gate D — validation | Blocked pending separate validation review | Developer evidence prepared; no validation verdict |
+| Gate C — original feature architecture | Approved by human project owner on 2026-08-26 | `FEATURE_CONTEXT.md` |
+| Original implementation milestones | M0–M7 developer gates historically passed; evidence preserved but insufficient for integrated completion | Milestone evidence below; 180-test and suffix results |
+| Gate D — validation | **Not approved on 2026-09-01; corrective work required** | `VALIDATION_REPORT.md`; GitHub issue #1; manual reproduction |
+| Corrective Gate C amendment | Draft; awaiting human project-owner approval | `FEATURE_CONTEXT_AMENDMENT_01.md`; proposed `ADR-0002` |
+| Corrective implementation | Blocked pending amendment approval | Proposed milestones R0–R3 |
 
 ## Implementation state
 
 - Implementation branch: `feature/TT-000-vertical-slice-0`
-- Active milestone: None — all approved implementation milestones passed
-- Implementation status: Complete; ready for separate validation review
+- Preserved baseline: `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85`
+- Active milestone: None — corrective implementation is not authorized
+- Implementation status: Original component implementation preserved; integrated TT-000 behavior incomplete
+- Node status: Unvalidated, unintegrated, inactive and locked
 
 ## Completed
 
@@ -39,10 +43,45 @@ Stage D — Milestone Implementation
 - [x] M5 — Snapshot and branching replay passed its approved gate.
 - [x] M6 — Asynchronous API and viewer passed its approved gate.
 - [x] M7 — Reference demonstration and validation package passed its approved developer gate.
+- [x] Human Gate D manual review reproduced the locked WebSocket dependency defect.
+- [x] Human Gate D manual review reproduced admitted-but-unprocessed live commands, an empty trace and no tick/publication advancement.
+- [x] Human Gate D manual review reproduced scheduler-only commandless advancement without held-input physics.
+- [x] Gate D was not approved on 2026-09-01.
+- [x] Stage C was reopened without rewriting the original approval or implementation history.
+- [x] Drafted `FEATURE_CONTEXT_AMENDMENT_01.md` and proposed `ADR-0002`.
+- [ ] Human project owner has reviewed and approved the corrective Gate C amendment.
+- [ ] Corrective milestones R0–R3 are authorized and complete.
+- [ ] Gate D revalidation passes.
 
 ## Active work
 
-No developer milestone is active. M0–M7 passed sequentially. TT-000 is ready for a separate validation review and remains blocked at Gate D.
+Documentation-only corrective Stage C is active. The amendment and ADR are ready for human review. No dependency or implementation change is authorized until the human project owner approves the corrective Gate C checklist.
+
+## Corrective Gate D loop
+
+### Reviewer baseline
+
+- Review date: 2026-09-01
+- Reviewer: Human project owner
+- Reviewed baseline: `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85`
+- Runtime profile: CPython 3.14.7, Windows x86-64
+- Full regression: 180 passed in 7.25 s
+- Suffix A trace/snapshot: `ee7552f36e05b795ac76562443dbd5e205f0ddec307f2a5d38e467f9f0f5b2c4` / `b084af87407376735a1ab5b0b772943cf8296e6c1e5e6812c38cbdc121f30dc9`
+- Suffix B trace/snapshot: `0bfe2d25db59135006993e6a3b438ace74e3b2eef4d40ae7e0b605e9d853a302` / `e8d0dfca3a8d96a08e56ee79e744816fbfc7835f1df42630bebb669f8029ca69`
+
+### Confirmed blockers
+
+| Finding | Evidence | Disposition |
+|---|---|---|
+| GD-001 — WebSocket backend absent from locked profile | Uvicorn rejected the upgrade; manual `wsproto` installation restored connection | Declare, pin, license and clean-install test the backend in R0 |
+| GD-002 — live server has no operating runtime owner | Two HTTP-202 commands remained without acknowledgements; trace empty; connected viewer stayed at tick/sequence 0 | Implement the approved owner/lifecycle path in R1–R2 |
+| GD-003 — commandless macro skips physics | Tick reached 30 while energy remained `0.9998888888888889 MWh` instead of `0.9997777777777779 MWh` | Enforce complete macro semantics and ZOH in R1 |
+
+The manual `wsproto` installation was a diagnostic modification to the review environment, not an approved project dependency change.
+
+### Historical evidence interpretation
+
+The original M0–M7 commands and results below are retained exactly as developer evidence. “Passed” means the specified tests passed at that time. Gate D demonstrated that the coverage did not prove the launched integrated composition, so those results may not be used alone to claim implementation completion or Gate D readiness.
 
 ## Test evidence
 
@@ -308,13 +347,15 @@ Gate coverage:
 - Alarm state retains occurrence identity after return until acknowledgement and emits `CLOSED` only when both condition-clear and acknowledged are true.
 - M5 keeps checksum/DTO code in the serialization adapter, compatibility policy in the inward snapshot package and heap/domain mapping in application orchestration; no adapter object enters domain state.
 - M5 derives topology-event identity from the snapshotted topology version, eliminating an otherwise hidden event counter while retaining the exact M4 event identity.
-- M6 returns HTTP 202 for canonical future command admission and exposes the final canonical acknowledgement as a separate read after deterministic boundary processing.
+- M6 tests established HTTP 202 admission and a separate acknowledgement read when boundary processing was invoked manually; Gate D showed that the launched server never performs that boundary processing.
 - M6 fan-out publishes to the lossless core evidence sink before bounded per-viewer observation work; viewer delivery performs no awaited callback into the synchronous owner.
 - M7 records actual numerical residuals in reference publications and hard-codes same-profile golden hashes only after the analytic, invariant, snapshot and adapter gates passed.
 - The M7 evidence package does not make a validation verdict. Validated architecture/reference/changelog/tech-tree updates and the retrospective remain reserved for later authorized stages.
 - The first M7 isolated-install command added an unsupported `--require-hashes` flag; after correcting the README to the approved version-pinned install command, the isolated full suite passed. This was a documentation-command defect, not an approved dependency or architecture change.
-- No architecture or scope deviations recorded. Corrected implementation-test failures are the M0 whitespace-sensitive documentation assertion and the M5 contracts dictionary-boundary regression described above.
+- Gate D confirmed an integrated runtime architecture/test gap. The correction remains within TT-000 and is governed by `FEATURE_CONTEXT_AMENDMENT_01.md` and proposed `ADR-0002`.
 
 ## Next permitted action
 
-Stop developer work on TT-000. A separate authorized validation review may evaluate the prepared evidence and decide Gate D. Do not mark TT-000 validated, integrated, active or unlocked, do not populate the retrospective, and do not begin another node before that review.
+The human project owner reviews `FEATURE_CONTEXT_AMENDMENT_01.md` and proposed `ADR-0002`. If acceptable, the owner explicitly approves the corrective Gate C checklist and records the approval date.
+
+Until that approval, do not modify implementation code or dependencies, begin R0, mark TT-000 validated/integrated/active/unlocked, populate the retrospective, update the canonical technology frontier, merge the feature branch, or begin another node.

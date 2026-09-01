@@ -14,7 +14,7 @@ Stage D — Corrective Milestone Implementation
 | Original implementation milestones | M0–M7 developer gates historically passed; evidence preserved but insufficient for integrated completion | Milestone evidence below; 180-test and suffix results |
 | Gate D — validation | **Not approved on 2026-09-01; corrective work required** | `VALIDATION_REPORT.md`; GitHub issue #1; manual reproduction |
 | Corrective Gate C amendment | **Approved by human project owner on 2026-09-01** | `FEATURE_CONTEXT_AMENDMENT_01.md`; accepted `ADR-0002` |
-| Corrective implementation | Authorized; R0 is active and R0–R2 are the current requested developer scope | Approved milestones R0–R3; current assignment R0–R2 |
+| Corrective implementation | Authorized; R0 passed and R1 is active | Approved milestones R0–R3; human owner requested R0–R3 on 2026-09-01 |
 
 ## Implementation state
 
@@ -22,9 +22,9 @@ Stage D — Corrective Milestone Implementation
 - Preserved pre-correction baseline: `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85`
 - Corrective Gate C approval: Human project owner, 2026-09-01
 - Accepted corrective decision: `ADR-0002-integrated-runtime-owner-and-server-lifecycle.md`
-- Active milestone: R0 — Characterize and repair the executable profile
-- Current developer authorization: Execute R0, R1 and R2 sequentially; stop on a failed gate or contradicted assumption
-- Implementation status: Corrective Stage D authorized; no corrective milestone has yet been reported complete
+- Active milestone: R1 — Integrated deterministic runtime owner
+- Current developer authorization: Execute R0 through R3 sequentially; stop on a failed gate or contradicted assumption
+- Implementation status: R0 passed; R1 is active
 - Node status: Unvalidated, unintegrated, inactive and locked
 
 ## Completed
@@ -55,7 +55,7 @@ Stage D — Corrective Milestone Implementation
 - [x] Human project owner reviewed and approved the corrective Gate C amendment on 2026-09-01.
 - [x] ADR-0002 accepted through the corrective Gate C approval.
 - [x] Corrective Stage D milestones R0–R3 authorized by the approved amendment.
-- [ ] R0 — Characterize and repair the executable profile passes.
+- [x] R0 — Characterize and repair the executable profile passes.
 - [ ] R1 — Integrated deterministic runtime owner passes.
 - [ ] R2 — Operational ASGI composition passes.
 - [ ] R3 — Regression and Gate D package passes.
@@ -63,11 +63,19 @@ Stage D — Corrective Milestone Implementation
 
 ## Active work
 
-Corrective Stage D is active. R0 is the current milestone. The developer may execute R0, then R1, then R2 under the approved amendment, recording commands, results, decisions, deviations and commits after each milestone. R1 may not begin until R0 passes; R2 may not begin until R1 passes. Stop and return to the appropriate gate if a milestone fails or evidence contradicts the approved amendment.
-
-R3 remains approved by Gate C but is not part of the immediate requested developer assignment.
+Corrective Stage D is active. R0 passed and R1 is the current milestone. The human project owner requested execution through R3 on 2026-09-01. R2 may not begin until R1 passes, and R3 may not begin until R2 passes. Stop and return to the appropriate gate if a milestone fails or evidence contradicts the approved amendment.
 
 ## Corrective Gate D loop
+
+### Corrective implementation preflight
+
+- Audit date: 2026-09-01
+- Branch before corrective implementation: `feature/TT-000-vertical-slice-0`
+- Commit before corrective implementation: `de961caa13d41c22b9de1c9ffe7e3a51ad5b04d3`
+- Working-tree status before corrective implementation: clean (`git status --short` produced no output)
+- Preserved failed Gate D baseline: `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85`; its 180-test result, suffix hashes and GD-001 through GD-003 observations below remain unchanged.
+- Governance commits between the failed baseline and the corrective implementation commit contain only the approved amendment, ADR and failed-validation records; `git diff --name-status f5ca22e..de961ca` showed no implementation-file changes.
+- The project `.venv` contained the reviewer's diagnostic `wsproto 1.3.2`; it was treated as modified diagnostic state, not clean-lock evidence.
 
 ### Reviewer baseline
 
@@ -92,6 +100,45 @@ The manual `wsproto` installation was a diagnostic modification to the review en
 ### Historical evidence interpretation
 
 The original M0–M7 commands and results below are retained exactly as developer evidence. “Passed” means the specified tests passed at that time. Gate D demonstrated that the coverage did not prove the launched integrated composition, so those results may not be used alone to claim implementation completion or Gate D readiness.
+
+## Corrective milestone evidence
+
+### R0 — Characterize and repair the executable profile
+
+- Status: Passed
+- Implementation commit: `a400367` (`fix(TT-000): repair R0 WebSocket profile`)
+- Starting commit/worktree: `de961caa13d41c22b9de1c9ffe7e3a51ad5b04d3`, clean
+- Selected backend: `wsproto==1.3.2`, resolved under CPython 3.14.7 on Windows x86-64; MIT license; requires the already locked `h11>=0.16.0,<1`
+
+Commands and results:
+
+1. `git branch --show-current`, `git rev-parse HEAD`, `git status --short`, and `git diff --name-status f5ca22e..de961ca`
+   - Passed: correct feature branch, governance HEAD recorded, empty status, and no implementation changes since the preserved failed Gate D baseline.
+2. `.\.venv\Scripts\python.exe -m pytest -q`, followed by both fast suffix commands and the GD-003 reproduction script.
+   - Characterization passed: 180 tests in 8.36 s; suffix A/B hashes remained exactly as recorded; GD-003 remained reproducible at tick 30 with unchanged energy `0.9998888888888889 MWh` instead of `0.9997777777777779 MWh`.
+3. `.\.venv\Scripts\python.exe -m pip index versions wsproto` and installed metadata inspection.
+   - Passed: `1.3.2` was the current compatible release; metadata reported MIT and `h11>=0.16.0,<1`.
+4. `.\.venv\Scripts\python.exe -m pytest tests/r0 tests/m0 -q`
+   - Passed: 123 passed, 2 expected characterization xfails in 2.95 s. The real Uvicorn process returned HTTP 101 for the publication WebSocket. GD-002 and GD-003 tests remain strict expected failures until their corrective milestones.
+5. Fresh temporary CPython 3.14.7 environment: `python -m pip install -r requirements.lock`, `python -m pip install --no-deps .`, `python -m pip check`, then `python -m pytest tests/r0 tests/m0 -q`.
+   - Passed: clean lock installed `wsproto 1.3.2` without a manual package addition; `pip check` reported no broken requirements; 123 passed and the 2 expected characterization xfails completed in 3.01 s; the real WebSocket upgrade test passed.
+6. `.\.venv\Scripts\python.exe -m compileall -q src tests` and `git diff --check`.
+   - Passed.
+
+Gate coverage:
+
+- The pre-correction full-suite result and suffix hashes remain preserved in this file and `VALIDATION_REPORT.md`.
+- The API optional profile, full lock and license inventory now explicitly contain `wsproto 1.3.2`.
+- Uvicorn selects `uvicorn.protocols.websockets.wsproto_impl` from the locked profile.
+- A real subprocess server accepts `/api/v1/publications` with an HTTP 101 WebSocket upgrade.
+- Fresh-lock evidence proves no diagnostic/manual dependency installation is needed.
+- Strict expected-failure tests capture GD-002 and GD-003 before their implementations change.
+
+Decisions and deviations:
+
+- The exact `wsproto` version approved for selection in R0 resolved to `1.3.2`; no substitute package or Uvicorn extra was introduced.
+- The existing project `.venv` was not used as clean-install evidence because it already contained the reviewer's diagnostic `wsproto` installation.
+- No canonical contract, time semantic, model equation or golden evidence changed in R0.
 
 ## Test evidence
 

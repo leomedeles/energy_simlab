@@ -17,6 +17,7 @@ py -3.14 -m venv .venv
 ```
 
 `requirements.lock` contains the complete transitive environment used for evidence. Exact direct versions and licenses are recorded in `pyproject.toml` and `docs/nodes/TT-000-vertical-slice-0/DEPENDENCY_LICENSES.md`.
+The locked API profile includes `wsproto`; no separate WebSocket package install is required.
 
 ## Deterministic reference scenario
 

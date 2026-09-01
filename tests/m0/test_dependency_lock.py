@@ -39,6 +39,7 @@ def test_approved_direct_versions_are_exact_and_installed():
     assert pyproject["project"]["optional-dependencies"]["api"] == [
         "fastapi==0.141.1",
         "uvicorn==0.52.4",
+        "wsproto==1.3.2",
     ]
     assert pyproject["project"]["optional-dependencies"]["test"] == ["pytest==9.1.1"]
 
@@ -47,6 +48,7 @@ def test_approved_direct_versions_are_exact_and_installed():
         "pydantic": "2.13.4",
         "fastapi": "0.141.1",
         "uvicorn": "0.52.4",
+        "wsproto": "1.3.2",
         "pytest": "9.1.1",
         "setuptools": "84.0.0",
     }

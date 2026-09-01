@@ -2,12 +2,12 @@
 
 ## Evidence profile
 
-- Inventory date: 2026-08-27
+- Inventory date: 2026-09-01
 - Runtime: CPython 3.14.7, Windows x86-64
 - Project lock: `requirements.lock`
 - Build backend: setuptools 84.0.0
 - Direct domain/edge dependency: Pydantic 2.13.4
-- Direct API dependencies: FastAPI 0.141.1 and Uvicorn 0.52.4
+- Direct API dependencies: FastAPI 0.141.1, Uvicorn 0.52.4 and wsproto 1.3.2
 - Direct test dependency: pytest 9.1.1
 
 The versions below are the complete installed dependency set produced from the
@@ -39,6 +39,7 @@ legal-compliance certification.
 | typing-extensions | 4.16.0 | FastAPI/Pydantic transitive | PSF-2.0 |
 | typing-inspection | 0.4.4 | FastAPI/Pydantic transitive | MIT |
 | Uvicorn | 0.52.4 | Direct API runtime adapter | BSD-3-Clause |
+| wsproto | 1.3.2 | Direct WebSocket protocol backend | MIT |
 
 ## Boundary decisions
 
@@ -47,6 +48,8 @@ legal-compliance certification.
 - Pydantic is confined to `energy_simlab.adapters.serialization`.
 - FastAPI and Uvicorn are confined to `energy_simlab.adapters.api` and the
   composition root.
+- wsproto is an explicitly selected Uvicorn transport dependency and does not
+  cross into domain or application state.
 - pytest and its support packages are test/build dependencies only.
 - No package in this inventory establishes protocol interoperability,
   standards conformance, electrical-model validity, or production suitability.

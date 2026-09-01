@@ -17,6 +17,7 @@ dependencies = [
 api = [
     "fastapi==0.141.1",
     "uvicorn==0.52.4",
+    "wsproto==1.3.2",
 ]
 test = [
     "pytest==9.1.1",

@@ -2,11 +2,84 @@
 
 ## Status
 
-Developer evidence prepared — ready for a separate validation review. No validation verdict or Gate D decision has been made.
+Human Gate D review performed on 2026-09-01. **Gate D is not approved; corrective work and revalidation are required.**
+
+TT-000 remains unvalidated, unintegrated and locked. The historical developer evidence is preserved below, but Gate D reproduction showed that it does not cover the launched integrated runtime.
 
 ## Verdict
 
-Pending independent validation.
+**FAIL — corrective work required before Gate D may be attempted again.**
+
+This verdict applies to implementation baseline `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85` on `feature/TT-000-vertical-slice-0`. It does not reject the original learning charter or research. The project returns to Stage C for the narrow corrective architecture amendment in `FEATURE_CONTEXT_AMENDMENT_01.md`.
+
+## Human Gate D review baseline
+
+| Item | Recorded evidence |
+|---|---|
+| Reviewer | Human project owner |
+| Review date | 2026-09-01 |
+| Platform/profile | CPython 3.14.7 on Windows x86-64, following the committed locked setup |
+| Full regression | 180 passed in 7.25 s |
+| Suffix A | Expected golden result reproduced; trace `ee7552f36e05b795ac76562443dbd5e205f0ddec307f2a5d38e467f9f0f5b2c4`; final snapshot `b084af87407376735a1ab5b0b772943cf8296e6c1e5e6812c38cbdc121f30dc9` |
+| Suffix B | Expected golden result reproduced; trace `0bfe2d25db59135006993e6a3b438ace74e3b2eef4d40ae7e0b605e9d853a302`; final snapshot `e8d0dfca3a8d96a08e56ee79e744816fbfc7835f1df42630bebb669f8029ca69` |
+| Tracking evidence | GitHub issue #1 and the observations below |
+
+The passing suite and golden suffixes establish that the existing tested and scripted paths remain reproducible. They do not override failures on required behavior that those paths did not exercise.
+
+## Confirmed findings
+
+### GD-001 — Locked API profile cannot establish the publication WebSocket
+
+Using only the committed locked installation, Uvicorn reported:
+
+```text
+Unsupported upgrade request.
+No supported WebSocket library detected.
+GET /api/v1/publications 404 Not Found
+```
+
+The viewer loaded as static HTML but reported `resync required (1006)`. Neither `requirements.lock` nor the `api` optional dependencies declare `websockets` or `wsproto`.
+
+The reviewer then installed `wsproto` manually in the same virtual environment solely to continue diagnosis. Uvicorn accepted `WebSocket /api/v1/publications`, and the viewer reported `connected`. This proves the original connection failure was a dependency/packaging defect. The manually modified environment is diagnostic evidence and is no longer an exact locked environment.
+
+### GD-002 — Launched server admits but never executes live commands
+
+With WebSocket connectivity restored:
+
+- the connected viewer remained at logical tick 0 and publication sequence 0 after more than 12 seconds;
+- two viewer commands, `CMD-API-00000001` and `CMD-API-00000002`, were admitted for tick 10 with HTTP 202;
+- both acknowledgement reads returned HTTP 404 with `{"detail":"acknowledgement is not available"}`;
+- `/api/v1/trace` returned an empty `entries` array;
+- no canonical publication reached the connected viewer.
+
+An admitted command is not required to be accepted, but deterministic processing must produce a final acknowledgement. Two missing acknowledgements plus an empty trace and stationary publication/tick state prove that the launched composition did not drain or execute ingress and did not advance the simulation.
+
+### GD-003 — Commandless macro advances the clock without physics
+
+The direct reproduction produced:
+
+```text
+tick: 30
+energy_at_tick_20: 0.9998888888888889
+energy_at_tick_30: 0.9998888888888889
+expected_if_held_for_20_to_30: 0.9997777777777779
+advanced_during_commandless_macro: False
+```
+
+After the accepted +0.4 MW command, the tick 10→20 macro removed `0.4 / 3600 MWh`. Advancing from tick 20 to 30 moved scheduler time but did not apply the held +0.4 MW intent for the next macro. This contradicts the approved zero-order hold and exact-child-interval requirements.
+
+## Gate D consequence and disposition
+
+The findings block the node-specific Definition of Done and learning questions 1, 2 and 7. Specifically, the reviewed implementation does not yet demonstrate:
+
+- one operational runtime owner across paced and fast execution;
+- complete macro/child advancement during commandless intervals;
+- deterministic future-boundary processing of live ingress;
+- publication from the continuously operating core to the viewer;
+- a clean locked environment capable of the documented WebSocket path.
+
+Gate D is therefore not approved. Corrective work remains inside TT-000. The approved history is not rewritten: the original Gate C decision and developer test results remain recorded, while Stage C is reopened for an explicit integrated-runtime amendment and ADR. Corrective implementation is blocked until the human project owner approves that amendment.
+
 
 ## Learning-question evidence for the reviewer
 
@@ -100,7 +173,10 @@ TT-000 supports aggregate active-power and usable-energy bookkeeping only within
 
 ## Deviations and corrective actions
 
-- No approved architecture or scope deviation is recorded.
+- Gate D confirmed GD-001, GD-002 and GD-003 against the reviewed baseline.
+- Stage C is reopened for `FEATURE_CONTEXT_AMENDMENT_01.md`; implementation remains blocked pending human approval.
+- Proposed `ADR-0002` defines the single owner and ASGI lifecycle decision for review.
+- The dependency correction, runtime behavior change, integration fix and new end-to-end tests must be implemented as corrective TT-000 work rather than deferred to a new node.
 - During M0, one whitespace-sensitive documentation assertion was corrected without changing the ADR.
 - During M5, a dictionary-annotation boundary test rejected the first shared phase-priority representation; it was replaced by a closed-enum function without changing order.
 - During M7, the first clean-install instruction incorrectly added `--require-hashes` to a version-pinned lock that does not contain artifact hashes. The README was corrected to the actual approved install command, and the isolated install/full suite then passed.
@@ -111,4 +187,6 @@ No maturity update is proposed by the developer. `TECH_TREE.md` and the validate
 
 ## Gate D decision
 
-Pending separate validation review by the authorized reviewer. The developer has not approved Gate D and has not marked TT-000 validated, integrated, active, or unlocked.
+**Not approved on 2026-09-01 by the human project owner acting as Gate D reviewer.**
+
+Corrective architecture clarification, implementation and revalidation are required. TT-000 remains unvalidated, unintegrated, inactive and locked. `TECH_TREE.md` and the validated architecture ledger must remain unchanged. The failed evidence must be preserved when post-correction results are appended.

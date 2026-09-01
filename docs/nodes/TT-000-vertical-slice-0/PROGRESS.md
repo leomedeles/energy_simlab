@@ -14,7 +14,7 @@ Stage D — Corrective Milestone Implementation
 | Original implementation milestones | M0–M7 developer gates historically passed; evidence preserved but insufficient for integrated completion | Milestone evidence below; 180-test and suffix results |
 | Gate D — validation | **Not approved on 2026-09-01; corrective work required** | `VALIDATION_REPORT.md`; GitHub issue #1; manual reproduction |
 | Corrective Gate C amendment | **Approved by human project owner on 2026-09-01** | `FEATURE_CONTEXT_AMENDMENT_01.md`; accepted `ADR-0002` |
-| Corrective implementation | Authorized; R0 passed and R1 is active | Approved milestones R0–R3; human owner requested R0–R3 on 2026-09-01 |
+| Corrective implementation | Authorized; R0–R1 passed and R2 is active | Approved milestones R0–R3; human owner requested R0–R3 on 2026-09-01 |
 
 ## Implementation state
 
@@ -22,9 +22,9 @@ Stage D — Corrective Milestone Implementation
 - Preserved pre-correction baseline: `f5ca22e28bdf6a32324c7d10021ff24f3d34ba85`
 - Corrective Gate C approval: Human project owner, 2026-09-01
 - Accepted corrective decision: `ADR-0002-integrated-runtime-owner-and-server-lifecycle.md`
-- Active milestone: R1 — Integrated deterministic runtime owner
+- Active milestone: R2 — Operational ASGI composition
 - Current developer authorization: Execute R0 through R3 sequentially; stop on a failed gate or contradicted assumption
-- Implementation status: R0 passed; R1 is active
+- Implementation status: R0–R1 passed; R2 is active
 - Node status: Unvalidated, unintegrated, inactive and locked
 
 ## Completed
@@ -56,14 +56,14 @@ Stage D — Corrective Milestone Implementation
 - [x] ADR-0002 accepted through the corrective Gate C approval.
 - [x] Corrective Stage D milestones R0–R3 authorized by the approved amendment.
 - [x] R0 — Characterize and repair the executable profile passes.
-- [ ] R1 — Integrated deterministic runtime owner passes.
+- [x] R1 — Integrated deterministic runtime owner passes.
 - [ ] R2 — Operational ASGI composition passes.
 - [ ] R3 — Regression and Gate D package passes.
 - [ ] Gate D revalidation passes.
 
 ## Active work
 
-Corrective Stage D is active. R0 passed and R1 is the current milestone. The human project owner requested execution through R3 on 2026-09-01. R2 may not begin until R1 passes, and R3 may not begin until R2 passes. Stop and return to the appropriate gate if a milestone fails or evidence contradicts the approved amendment.
+Corrective Stage D is active. R0 and R1 passed; R2 is the current milestone. The human project owner requested execution through R3 on 2026-09-01. R3 may not begin until R2 passes. Stop and return to the appropriate gate if a milestone fails or evidence contradicts the approved amendment.
 
 ## Corrective Gate D loop
 
@@ -139,6 +139,48 @@ Decisions and deviations:
 - The exact `wsproto` version approved for selection in R0 resolved to `1.3.2`; no substitute package or Uvicorn extra was introduced.
 - The existing project `.venv` was not used as clean-install evidence because it already contained the reviewer's diagnostic `wsproto` installation.
 - No canonical contract, time semantic, model equation or golden evidence changed in R0.
+
+### R1 — Integrated deterministic runtime owner
+
+- Status: Passed
+- Implementation commit: `1364e25` (`fix(TT-000): implement R1 integrated runtime owner`)
+- Prerequisite: R0 passed at `a400367`; R0 evidence recorded at `af15398`
+
+Commands and results:
+
+1. `.\.venv\Scripts\python.exe -m pytest tests/r1 tests/r0 tests/m1 tests/m3 tests/m0 -q`
+   - Passed during owner integration: 154 passed and the single remaining GD-002 strict expected failure in 3.70 s.
+2. `.\.venv\Scripts\python.exe -m pytest -q` during migration of legacy callers.
+   - Characterization run: 13 tests failed because M5–M7 fixtures still invoked removed scheduler-only/public component conductors. Those fixtures and the demonstration were migrated to the real owner; no compatibility wrapper that could bypass semantics was added.
+3. `.\.venv\Scripts\python.exe -m pytest tests/m5/test_branching_replay.py -q`
+   - First integrated branch run exposed a pre-command publication difference caused only by assigning A/B run IDs at restore. The continuation now runs through tick 100 with a common restored lineage, assigns the branch ID at the first distinct suffix command, and passed 2 tests in 1.56 s with causal first divergence preserved.
+4. `.\.venv\Scripts\python.exe -m pytest tests/r1 tests/r0 tests/m1 tests/m3 tests/m5 tests/m7 -q`
+   - Passed: 43 passed and the one remaining GD-002 strict expected failure in 8.29 s.
+5. `.\.venv\Scripts\python.exe -m pytest -q`
+   - Passed: 189 passed and the one remaining GD-002 strict expected failure in 14.03 s.
+6. `.\.venv\Scripts\python.exe -m pip check`, `.\.venv\Scripts\python.exe -m compileall -q src tests`, and `git diff --check`.
+   - Passed: no broken requirements, compilation errors or patch-integrity errors.
+7. `.\.venv\Scripts\python.exe -m energy_simlab.bootstrap.demonstration --mode fast --suffix A` and suffix B.
+   - Passed through the shared owner. Post-correction suffix A: trace `53650f4800bf07fe37fc50a9a5525fd16d047b6f8dc4a4fb3b7aa170623d1993`, snapshot `2ceff36d401be4449f4b5e19814d86845e3a02ca52b9726d6aa05542476426c0`. Suffix B: trace `98c17a30e824810d81eaf614902cc14b8bfaed48d34559a3c65a9b53213f843d`, snapshot `bb092858f76a70deda480ee3464bc293c066c40fa511e2436989dc76de9d8dd7`. Both end at `1.000037170499217 MWh` and emit 12 macro publications.
+
+Gate coverage:
+
+- `IntegratedRuntimeOwner.advance_one_macro()` is the sole public operational advancement method and executes all eleven approved phases through a quiescent boundary.
+- `IntegratedRuntimeOwner.run_until(T)` repeatedly invokes complete macros; `ReplayRuntime` exposes no public scheduler-only `run_until`.
+- Every fallback and detailed macro completes exactly ten 0.1 s child intervals, including zero-target and commandless macros.
+- Two held +0.4 MW fallback macros produce cumulative energy `1.0 - 2 × 0.4 / 3600 MWh` within the approved tolerance.
+- Detailed commandless macros advance energy with per-macro energy residual at most `1e-10 MWh` and coupling residual at most `1e-12 MWh`.
+- The reference demonstration, snapshot/replay fixtures and viewer-invariance fixture all use the integrated owner rather than reproducing phase order externally.
+- Fast and fake-wall paced execution use the same owner path and produce byte-identical canonical traces.
+- Held requested/accepted/target state, pending ingress, scheduler boundary, publication sequence and branch lineage remain captured or derived from the existing V1 snapshot inventory; no schema field changed.
+
+Decisions and deviations:
+
+- The correction is intentionally behavioral, not a behavior-preserving refactor: every previously skipped macro now advances physics and publishes.
+- Historical failed Gate D hashes remain unchanged above. New golden hashes changed because the approved ZOH now executes the formerly omitted 20→30, 30→40, 50→80 and post-restore macro intervals. The model equations, time base and contracts did not change.
+- Final energy changed from `0.9998446478818566 MWh` to `1.000037170499217 MWh`: +0.4 MW remains held through its commandless intervals, then the accepted -1.0 MW request remains held until the tick-80 safe-zero interlock; this is the approved correction rather than a tolerance or model migration.
+- A restored continuation uses a common deterministic pre-branch run lineage through tick 100, then assigns A/B lineage immediately before the first different command. This preserves separate final run IDs and the approved causal first-divergence property despite mandatory tick-100 publication.
+- No V1 canonical schema, sign convention, phase value, command authority, snapshot version or model identity changed.
 
 ## Test evidence
 

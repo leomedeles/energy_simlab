@@ -7,7 +7,7 @@ from energy_simlab.adapters.serialization import (
     canonical_json_bytes,
     parse_json_bytes,
 )
-from energy_simlab.application import ReplayRuntime, RuntimeApiFacade
+from energy_simlab.application import IntegratedRuntimeOwner, ReplayRuntime, RuntimeApiFacade
 from energy_simlab.bootstrap import ServerConfiguration, compose_server
 from energy_simlab.contracts.enums import CommandAuthority, CommandKind, Unit
 from energy_simlab.contracts.records import AcknowledgementV1, CommandV1, TopologySnapshotV1
@@ -86,8 +86,11 @@ def test_http_request_acknowledgement_and_reads_map_through_edge_dtos():
     assert admitted == command
     assert type(admitted) is CommandV1
 
-    assert components.application.drain_for_tick(10) == (command,)
-    components.runtime.execute_power_command(command)
+    eligible = components.application.drain_for_tick(10)
+    assert eligible == (command,)
+    owner = IntegratedRuntimeOwner(runtime=components.runtime)
+    owner.run_until(10)
+    owner.advance_one_macro(eligible)
     status, body = asyncio.run(
         asgi_request(
             components.asgi_app,

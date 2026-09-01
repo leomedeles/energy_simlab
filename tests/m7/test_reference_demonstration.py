@@ -31,19 +31,19 @@ def test_fast_and_paced_reference_scenario_match_exact_golden_trace_and_outcomes
     assert fast.final_snapshot == paced.final_snapshot
     assert paced_pacer.diagnostics == ()
     assert sha256(fast.canonical_trace).hexdigest() == (
-        "ee7552f36e05b795ac76562443dbd5e205f0ddec307f2a5d38e467f9f0f5b2c4"
+        "53650f4800bf07fe37fc50a9a5525fd16d047b6f8dc4a4fb3b7aa170623d1993"
     )
     assert sha256(fast.snapshot_at_90).hexdigest() == (
-        "9c7b603800faac29678256cc1d285f5caf8d3dc29030fe349be2e2a0ad640fd0"
+        "293ab69120e2509f21da6263f2506f7859945a15af5d0998be4f71f02d5fa680"
     )
     assert sha256(fast.final_snapshot).hexdigest() == (
-        "b084af87407376735a1ab5b0b772943cf8296e6c1e5e6812c38cbdc121f30dc9"
+        "2ceff36d401be4449f4b5e19814d86845e3a02ca52b9726d6aa05542476426c0"
     )
     assert fast.final_operating_mode == "ISLANDED_UNSUPPORTED"
     assert fast.final_applied_power_mw == 0.0
-    assert fast.final_energy_mwh == 0.9998446478818566
+    assert fast.final_energy_mwh == 1.000037170499217
     assert fast.alarm_active and fast.alarm_acknowledged
-    assert len(fast.publications) == 5
+    assert len(fast.publications) == 12
 
 
 def test_golden_trace_has_every_required_record_family_version_and_correlation():
@@ -82,10 +82,10 @@ def test_alternative_suffix_is_repeatable_and_rejection_is_the_causal_divergence
     assert first.canonical_trace == second.canonical_trace
     assert first.final_snapshot == second.final_snapshot
     assert sha256(first.canonical_trace).hexdigest() == (
-        "0bfe2d25db59135006993e6a3b438ace74e3b2eef4d40ae7e0b605e9d853a302"
+        "98c17a30e824810d81eaf614902cc14b8bfaed48d34559a3c65a9b53213f843d"
     )
     assert sha256(first.final_snapshot).hexdigest() == (
-        "e8d0dfca3a8d96a08e56ee79e744816fbfc7835f1df42630bebb669f8029ca69"
+        "bb092858f76a70deda480ee3464bc293c066c40fa511e2436989dc76de9d8dd7"
     )
     assert first.alarm_active and not first.alarm_acknowledged
     alternative_ack = next(

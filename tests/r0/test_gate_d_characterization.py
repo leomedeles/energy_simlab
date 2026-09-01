@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from energy_simlab.adapters.serialization import canonical_json_bytes
-from energy_simlab.application import ReplayRuntime
+from energy_simlab.application import IntegratedRuntimeOwner
 from energy_simlab.bootstrap import compose_server
 from energy_simlab.contracts.enums import CommandAuthority, CommandKind, Unit
 from energy_simlab.contracts.records import CommandV1
@@ -72,18 +72,15 @@ def test_gd002_launched_composition_advances_and_publishes_while_idle() -> None:
     assert publication_count >= 1
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="GD-003: pre-correction run_until moves the scheduler without held-input physics",
-)
 def test_gd003_commandless_macro_advances_held_fallback_power() -> None:
-    runtime = ReplayRuntime.new_reference(record_encoder=canonical_json_bytes)
-    runtime.execute_power_macro(_power_command())
-    energy_at_tick_20 = runtime.active_model.energy_stored_mwh
+    owner = IntegratedRuntimeOwner.new_reference(record_encoder=canonical_json_bytes)
+    owner.run_until(10)
+    owner.advance_one_macro((_power_command(),))
+    energy_at_tick_20 = owner.runtime.active_model.energy_stored_mwh
 
-    runtime.run_until(30)
+    owner.run_until(30)
 
-    assert runtime.active_model.energy_stored_mwh == pytest.approx(
+    assert owner.runtime.active_model.energy_stored_mwh == pytest.approx(
         energy_at_tick_20 - 0.4 / 3600.0,
         rel=1e-12,
         abs=1e-12,

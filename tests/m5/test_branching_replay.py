@@ -5,7 +5,7 @@ from energy_simlab.adapters.serialization import (
     decode_snapshot,
     encode_snapshot,
 )
-from energy_simlab.application import FreshRuntimeDestination
+from energy_simlab.application import FreshRuntimeDestination, IntegratedRuntimeOwner
 from energy_simlab.contracts.enums import (
     AcknowledgementReason,
     AcknowledgementStatus,
@@ -25,20 +25,26 @@ def restore(payload: bytes, branch_id: str):
 
 
 def run_suffix_a(payload: bytes) -> tuple[bytes, object]:
-    runtime = restore(payload, "A")
+    runtime = restore(payload, "PRE-BRANCH")
+    owner = IntegratedRuntimeOwner(runtime=runtime)
     assert runtime.alarm.state is not None
-    acknowledgement, _ = runtime.acknowledge_alarm(
-        command(
+    owner.run_until(100)
+    owner.begin_branch("A")
+    result = owner.advance_one_macro(
+        (
+            command(
             "CMD-ACK-001",
             sequence=5,
             tick=100,
             kind=CommandKind.ACKNOWLEDGE_ALARM,
             target_id=runtime.alarm.state.occurrence_id,
+            ),
         )
     )
+    acknowledgement = result.acknowledgements[0]
     assert acknowledgement.status is AcknowledgementStatus.ACCEPTED
     runtime.rng.random()
-    runtime.run_until(120)
+    owner.run_until(120)
     final = runtime.capture_bytes(
         snapshot_id="S-TT000-A-120",
         correlation_id="END-A",
@@ -49,22 +55,28 @@ def run_suffix_a(payload: bytes) -> tuple[bytes, object]:
 
 
 def run_suffix_b(payload: bytes) -> tuple[bytes, object]:
-    runtime = restore(payload, "B")
-    acknowledgement = runtime.execute_power_command(
-        command(
-            "CMD-P-ALT-001",
-            sequence=1,
-            tick=100,
-            kind=CommandKind.SET_ACTIVE_POWER,
-            target_id="BESS",
-            value_mw=0.3,
-            source_id="operator",
+    runtime = restore(payload, "PRE-BRANCH")
+    owner = IntegratedRuntimeOwner(runtime=runtime)
+    owner.run_until(100)
+    owner.begin_branch("B")
+    result = owner.advance_one_macro(
+        (
+            command(
+                "CMD-P-ALT-001",
+                sequence=1,
+                tick=100,
+                kind=CommandKind.SET_ACTIVE_POWER,
+                target_id="BESS",
+                value_mw=0.3,
+                source_id="operator",
+            ),
         )
     )
+    acknowledgement = result.acknowledgements[0]
     assert acknowledgement.status is AcknowledgementStatus.REJECTED
     assert acknowledgement.reason is AcknowledgementReason.TARGET_MODE_UNAVAILABLE
     runtime.rng.random()
-    runtime.run_until(120)
+    owner.run_until(120)
     final = runtime.capture_bytes(
         snapshot_id="S-TT000-B-120",
         correlation_id="END-B",

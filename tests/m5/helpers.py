@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from energy_simlab.adapters.serialization import canonical_json_bytes, encode_snapshot
-from energy_simlab.application import ReplayRuntime
+from energy_simlab.application import IntegratedRuntimeOwner, ReplayRuntime
 from energy_simlab.contracts.enums import (
     CommandAuthority,
     CommandKind,
@@ -44,6 +44,7 @@ def command(
 
 def reference_runtime_at_90() -> tuple[ReplayRuntime, dict[str, CommandV1]]:
     runtime = ReplayRuntime.new_reference(record_encoder=canonical_json_bytes)
+    owner = IntegratedRuntimeOwner(runtime=runtime)
     commands = {
         "power_1": command(
             "CMD-P-001",
@@ -76,10 +77,13 @@ def reference_runtime_at_90() -> tuple[ReplayRuntime, dict[str, CommandV1]]:
             target_id="PCC",
         ),
     }
-    runtime.execute_power_command(commands["power_1"])
-    runtime.activate_detailed(commands["model"])
-    runtime.execute_power_command(commands["power_2"])
-    runtime.open_pcc(commands["open"])
+    owner.run_until(10)
+    owner.advance_one_macro((commands["power_1"],))
+    owner.run_until(30)
+    owner.advance_one_macro((commands["model"],))
+    owner.advance_one_macro((commands["power_2"],))
+    owner.run_until(80)
+    owner.advance_one_macro((commands["open"],))
 
     cancelled = runtime.scheduler.schedule(
         logical_tick=200,
@@ -119,7 +123,7 @@ def reference_runtime_at_90() -> tuple[ReplayRuntime, dict[str, CommandV1]]:
         )
     )
     runtime.rng.gauss(0.0, 1.0)
-    runtime.run_until(90)
+    assert runtime.scheduler.current_tick == 90
     return runtime, commands
 
 

@@ -32,7 +32,7 @@ class ViewerPatternSink:
 def run_pattern(viewer_count: int, pattern: str):
     sink = ViewerPatternSink(viewer_count, pattern)
     result = run_reference_demonstration(suffix="A", publication_sink=sink)
-    assert len(sink.evidence.publications) == 5
+    assert len(sink.evidence.publications) == 12
     return result.canonical_trace, result.final_snapshot
 
 

@@ -12,26 +12,18 @@ from energy_simlab.adapters.serialization import (
     decode_snapshot,
     encode_snapshot,
 )
-from energy_simlab.application import FreshRuntimeDestination, PowerMacroExecution, ReplayRuntime
-from energy_simlab.balance import AlgebraicActivePowerBalance
+from energy_simlab.adapters.persistence import InMemorySnapshotStore
+from energy_simlab.application import FreshRuntimeDestination, IntegratedRuntimeOwner
 from energy_simlab.contracts.enums import (
-    AggregationKind,
     CommandAuthority,
     CommandKind,
     Unit,
 )
 from energy_simlab.contracts.ports import Pacer, PublicationSink
 from energy_simlab.contracts.records import (
-    AcknowledgementV1,
-    AlarmEventV1,
     CommandV1,
-    DiscreteRecordV1,
-    FidelityEventV1,
-    InterlockEventV1,
     MacroPublicationV1,
     ScenarioV1,
-    TelemetrySampleV1,
-    TopologyEventV1,
     TraceV1,
 )
 from energy_simlab.kernel import NoOpPacer, WallClockPacer
@@ -173,99 +165,6 @@ def _scenario(commands: dict[str, CommandV1]) -> ScenarioV1:
     )
 
 
-def _publication(
-    runtime: ReplayRuntime,
-    *,
-    interval_start_tick: int,
-    discrete_records: tuple[DiscreteRecordV1, ...],
-    macro: PowerMacroExecution | None = None,
-) -> MacroPublicationV1:
-    observation = runtime.active_model.observe()
-    tick = runtime.scheduler.current_tick
-    sequence = runtime.publication_sequence + 1
-    balance = AlgebraicActivePowerBalance().calculate(
-        logical_tick=tick,
-        load_mw=runtime.scenario.configuration.load_mw,
-        bess_ac_power_mw=observation.applied_power_mw,
-        topology=runtime.topology,
-    )
-    values = (
-        ("requested_power", runtime.controller.requested_power_mw, Unit.MEGAWATT),
-        ("accepted_power", runtime.controller.accepted_power_mw, Unit.MEGAWATT),
-        ("target_power", runtime.controller.target_power_mw, Unit.MEGAWATT),
-        ("applied_power", observation.applied_power_mw, Unit.MEGAWATT),
-        ("stored_energy", observation.energy_stored_mwh, Unit.MEGAWATT_HOUR),
-        ("soc", observation.soc, Unit.PER_UNIT),
-        ("operating_mode", observation.operating_mode.value, Unit.NONE),
-        (
-            "grid_import" if balance.grid_import_mw is not None else "island_imbalance",
-            balance.grid_import_mw
-            if balance.grid_import_mw is not None
-            else balance.island_imbalance_mw,
-            Unit.MEGAWATT,
-        ),
-    )
-    telemetry = tuple(
-        TelemetrySampleV1(
-            id=f"TEL-REFERENCE-{sequence:04d}-{index:02d}",
-            source_id="reference-publisher",
-            logical_tick=tick,
-            sequence=(sequence - 1) * len(values) + index,
-            subject_id="PCC" if signal in {"grid_import", "island_imbalance"} else "BESS",
-            signal_id=signal,
-            value=value,
-            unit=unit,
-            aggregation=AggregationKind.END,
-            interval_start_tick=interval_start_tick,
-            interval_end_tick=tick,
-            quality=balance.quality,
-            model_id=observation.model_id,
-            model_version=observation.model_version,
-            topology_version=runtime.topology.topology_version,
-        )
-        for index, (signal, value, unit) in enumerate(values, start=1)
-    )
-    return MacroPublicationV1(
-        id=f"PUB-REFERENCE-{sequence:08d}",
-        source_id="reference-publisher",
-        logical_tick=tick,
-        sequence=sequence,
-        run_id=runtime.run_id,
-        interval_start_tick=interval_start_tick,
-        interval_end_tick=tick,
-        telemetry=telemetry,
-        discrete_records=discrete_records,
-        energy_residual_mwh=0.0 if macro is None else macro.energy_residual_mwh,
-        coupling_residual_mwh=0.0 if macro is None else macro.coupling_residual_mwh,
-    )
-
-
-def _record_publication(
-    runtime: ReplayRuntime,
-    recorder: _PublicationRecorder,
-    *,
-    interval_start_tick: int,
-    discrete_records: tuple[DiscreteRecordV1, ...],
-    macro: PowerMacroExecution | None = None,
-) -> None:
-    publication = _publication(
-        runtime,
-        interval_start_tick=interval_start_tick,
-        discrete_records=discrete_records,
-        macro=macro,
-    )
-    runtime.record_publication(publication)
-    recorder.publish(publication)
-
-
-def _acknowledgement(runtime: ReplayRuntime, command_id: str) -> AcknowledgementV1:
-    return next(
-        item.acknowledgement
-        for item in runtime.validator.export_receipts()
-        if item.command.id == command_id
-    )
-
-
 def run_reference_demonstration(
     *,
     suffix: str = "A",
@@ -278,81 +177,39 @@ def run_reference_demonstration(
     scenario = _scenario(commands)
     pacer = pacer or NoOpPacer()
     recorder = _PublicationRecorder(publication_sink)
-    runtime = ReplayRuntime.new_reference(
+    snapshot_store = InMemorySnapshotStore()
+    owner = IntegratedRuntimeOwner.new_reference(
         record_encoder=canonical_json_bytes,
         scenario=scenario,
+        publication_sink=recorder,
+        snapshot_encoder=encode_snapshot,
+        snapshot_store=snapshot_store,
     )
     tick_seconds = scenario.configuration.base_tick_seconds
 
-    pacer.wait_until(10, tick_seconds)
-    macro_1 = runtime.execute_power_macro(commands["power_1"])
-    _record_publication(
-        runtime,
-        recorder,
-        interval_start_tick=10,
-        discrete_records=(macro_1.acknowledgement,),
-        macro=macro_1,
-    )
-
-    pacer.wait_until(30, tick_seconds)
-    fidelity = runtime.activate_detailed(commands["model"])
-    model_ack = _acknowledgement(runtime, commands["model"].id)
-    _record_publication(
-        runtime,
-        recorder,
-        interval_start_tick=20,
-        discrete_records=(model_ack, fidelity),
-    )
-
-    pacer.wait_until(40, tick_seconds)
-    macro_2 = runtime.execute_power_macro(commands["power_2"])
-    _record_publication(
-        runtime,
-        recorder,
-        interval_start_tick=40,
-        discrete_records=(macro_2.acknowledgement,),
-        macro=macro_2,
-    )
-
-    pacer.wait_until(80, tick_seconds)
-    topology_event, interlock_event, alarm_event = runtime.open_pcc(commands["open"])
-    open_ack = _acknowledgement(runtime, commands["open"].id)
-    _record_publication(
-        runtime,
-        recorder,
-        interval_start_tick=70,
-        discrete_records=(open_ack, topology_event, interlock_event, alarm_event),
-    )
-
-    pacer.wait_until(90, tick_seconds)
-    _, snapshot_at_90 = runtime.capture_command(
-        commands["snapshot"],
-        snapshot_id="S-TT000-090",
-        snapshot_encoder=encode_snapshot,
-    )
+    owner.run_until(90, pacer=pacer)
+    snapshot_at_90 = snapshot_store.get("S-TT000-090")
     restored = FreshRuntimeDestination().restore_bytes(
         snapshot_at_90,
-        branch_id=suffix,
+        branch_id="PRE-BRANCH",
         record_encoder=canonical_json_bytes,
         snapshot_decoder=decode_snapshot,
     )
-
-    pacer.wait_until(100, tick_seconds)
-    if suffix == "A":
-        suffix_ack, alarm_events = restored.acknowledge_alarm(commands["ack"])
-        discrete: tuple[DiscreteRecordV1, ...] = (suffix_ack, *alarm_events)
-    else:
-        macro_alt = restored.execute_power_macro(commands["alternative"])
-        discrete = (macro_alt.acknowledgement,)
-    _record_publication(
-        restored,
-        recorder,
-        interval_start_tick=90,
-        discrete_records=discrete,
+    owner = IntegratedRuntimeOwner(
+        runtime=restored,
+        publication_sink=recorder,
+        snapshot_encoder=encode_snapshot,
+        snapshot_store=snapshot_store,
     )
 
-    pacer.wait_until(120, tick_seconds)
-    restored.run_until(120)
+    owner.run_until(100, pacer=pacer)
+    owner.begin_branch(suffix)
+    pacer.wait_until(110, tick_seconds)
+    if suffix == "A":
+        owner.advance_one_macro((commands["ack"],))
+    else:
+        owner.advance_one_macro((commands["alternative"],))
+    owner.run_until(120, pacer=pacer)
     final_snapshot = restored.capture_bytes(
         snapshot_id=f"S-TT000-{suffix}-120",
         correlation_id=f"END-{suffix}",

@@ -11,7 +11,7 @@ from energy_simlab.adapters.serialization import (
     decode_snapshot,
     encode_snapshot,
 )
-from energy_simlab.application import FreshRuntimeDestination
+from energy_simlab.application import FreshRuntimeDestination, IntegratedRuntimeOwner
 from energy_simlab.contracts.enums import CommandKind
 from energy_simlab.snapshots import SnapshotCompatibilityError
 
@@ -28,8 +28,9 @@ def test_inventory_mutates_and_restores_every_declared_mutable_state_class():
         kind=CommandKind.ACKNOWLEDGE_ALARM,
         target_id=runtime.alarm.state.occurrence_id,
     )
-    runtime.acknowledge_alarm(acknowledgement_command)
-    runtime.run_until(100)
+    IntegratedRuntimeOwner(runtime=runtime).advance_one_macro(
+        (acknowledgement_command,)
+    )
     envelope = runtime.capture_envelope(
         snapshot_id="S-TT000-INVENTORY-100",
         correlation_id="CMD-SNAP-INVENTORY",
@@ -46,7 +47,7 @@ def test_inventory_mutates_and_restores_every_declared_mutable_state_class():
     )
     assert destination.started
     assert restored.scheduler.export_state() == runtime.scheduler.export_state()
-    assert restored.publication_sequence == runtime.publication_sequence == 7
+    assert restored.publication_sequence == runtime.publication_sequence == 8
     assert restored.registry.export_snapshot(
         requested_power_mw=restored.controller.requested_power_mw,
         accepted_power_mw=restored.controller.accepted_power_mw,

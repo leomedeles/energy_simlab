@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from hashlib import sha256
+from math import fsum
 import random
 
 from energy_simlab.alarms import UnsupportedIslandAlarm
@@ -61,8 +62,8 @@ SnapshotEncoder = Callable[[SnapshotEnvelopeV1], bytes]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class PowerMacroExecution:
-    acknowledgement: AcknowledgementV1
+class ModelMacroExecution:
+    child_completions: int
     mean_power_mw: float
     energy_residual_mwh: float
     coupling_residual_mwh: float
@@ -165,7 +166,9 @@ class ReplayRuntime:
         config = self.scenario.configuration
         return config.base_tick_seconds * config.macro_ticks
 
-    def run_until(self, logical_tick: int) -> None:
+    def _advance_scheduler_only(self, logical_tick: int) -> None:
+        """Move the queue clock after semantic work; never expose as simulation advance."""
+
         self.scheduler.run_until(logical_tick, self._handle_kernel_event)
 
     def _handle_kernel_event(
@@ -176,11 +179,9 @@ class ReplayRuntime:
         if event.kind is KernelEventKind.PUBLICATION:
             self.publication_sequence += 1
 
-    def execute_power_command(self, command: CommandV1) -> AcknowledgementV1:
-        return self.execute_power_macro(command).acknowledgement
-
-    def execute_power_macro(self, command: CommandV1) -> PowerMacroExecution:
-        self.run_until(command.apply_tick)
+    def _process_power_command(self, command: CommandV1) -> AcknowledgementV1:
+        if command.apply_tick != self.scheduler.current_tick:
+            raise ValueError("power commands execute only at the current macro boundary")
         decision = self.validator.validate_power_request(
             command,
             current_tick=command.apply_tick,
@@ -190,9 +191,6 @@ class ReplayRuntime:
         )
         self._append(command, TraceRecordKind.COMMAND)
         self._append(decision.acknowledgement, TraceRecordKind.ACKNOWLEDGEMENT)
-        mean_power_mw = self.active_model.applied_power_mw
-        energy_residual_mwh = 0.0
-        coupling_residual_mwh = 0.0
         if (
             not decision.duplicate
             and decision.acknowledgement.status
@@ -200,31 +198,52 @@ class ReplayRuntime:
         ):
             self.controller.apply_decision(command, decision)
             self.last_command_id = command.id
-            if isinstance(self.active_model, DetailedBess):
-                reduction = FixedRatioBessRunner(
-                    macro_seconds=self.macro_duration_seconds,
-                    child_seconds=self.scenario.configuration.base_tick_seconds,
-                ).advance_macro(self.active_model, self.controller.target_power_mw)
-                mean_power_mw = reduction.mean_power_mw
-                energy_residual_mwh = reduction.energy_residual_mwh
-                coupling_residual_mwh = reduction.coupling_residual_mwh
-            else:
-                step = self.active_model.advance(
-                    self.controller.target_power_mw,
-                    self.macro_duration_seconds,
-                )
-                mean_power_mw = step.mean_power_mw
-                energy_residual_mwh = step.energy_residual_mwh
-            self.run_until(command.apply_tick + self.scenario.configuration.macro_ticks)
-        return PowerMacroExecution(
-            acknowledgement=decision.acknowledgement,
-            mean_power_mw=mean_power_mw,
-            energy_residual_mwh=energy_residual_mwh,
-            coupling_residual_mwh=coupling_residual_mwh,
-        )
+        return decision.acknowledgement
 
-    def activate_detailed(self, command: CommandV1) -> FidelityEventV1:
-        self.run_until(command.apply_tick)
+    def _advance_held_power_macro(self) -> ModelMacroExecution:
+        """Advance all child intervals under the controller's zero-order-held target."""
+
+        start_tick = self.scheduler.current_tick
+        configuration = self.scenario.configuration
+        if start_tick % configuration.macro_ticks:
+            raise ValueError("model advancement requires a macro boundary")
+        if isinstance(self.active_model, DetailedBess):
+            reduction = FixedRatioBessRunner(
+                macro_seconds=self.macro_duration_seconds,
+                child_seconds=configuration.base_tick_seconds,
+            ).advance_macro(self.active_model, self.controller.target_power_mw)
+            execution = ModelMacroExecution(
+                child_completions=reduction.child_completions,
+                mean_power_mw=reduction.mean_power_mw,
+                energy_residual_mwh=reduction.energy_residual_mwh,
+                coupling_residual_mwh=reduction.coupling_residual_mwh,
+            )
+        else:
+            steps = tuple(
+                self.active_model.advance(
+                    self.controller.target_power_mw,
+                    configuration.base_tick_seconds,
+                )
+                for _ in range(configuration.macro_ticks)
+            )
+            ac_energy_mwh = fsum(item.ac_energy_mwh for item in steps)
+            execution = ModelMacroExecution(
+                child_completions=len(steps),
+                mean_power_mw=ac_energy_mwh * 3600.0 / self.macro_duration_seconds,
+                energy_residual_mwh=fsum(item.energy_residual_mwh for item in steps),
+                coupling_residual_mwh=(
+                    ac_energy_mwh * 3600.0 / self.macro_duration_seconds
+                )
+                * self.macro_duration_seconds
+                / 3600.0
+                - ac_energy_mwh,
+            )
+        self._advance_scheduler_only(start_tick + configuration.macro_ticks)
+        return execution
+
+    def _activate_detailed(self, command: CommandV1) -> FidelityEventV1:
+        if command.apply_tick != self.scheduler.current_tick:
+            raise ValueError("fidelity commands execute only at the current macro boundary")
         local_component = self._local_component()
         decision = self.validator.validate_action_request(
             command,
@@ -259,8 +278,25 @@ class ReplayRuntime:
         self.last_command_id = command.id
         return event
 
-    def open_pcc(self, command: CommandV1) -> tuple[TopologyEventV1, InterlockEventV1, AlarmEventV1]:
-        self.run_until(command.apply_tick)
+    def _open_pcc(self, command: CommandV1) -> tuple[TopologyEventV1, InterlockEventV1, AlarmEventV1]:
+        acknowledgement, topology_event = self._apply_pcc_topology(command)
+        interlock_event = self._apply_unsupported_island_context(
+            command,
+            topology_event,
+        )
+        alarm_event = self._evaluate_unsupported_island_alarm(
+            command,
+            interlock_event,
+        )
+        self.last_command_id = command.id
+        return topology_event, interlock_event, alarm_event
+
+    def _apply_pcc_topology(
+        self,
+        command: CommandV1,
+    ) -> tuple[AcknowledgementV1, TopologyEventV1]:
+        if command.apply_tick != self.scheduler.current_tick:
+            raise ValueError("topology commands execute only at the current macro boundary")
         decision = self.validator.validate_action_request(
             command,
             current_tick=command.apply_tick,
@@ -282,6 +318,13 @@ class ReplayRuntime:
             causation_id=decision.acknowledgement.id,
         )
         self._append(topology_event, TraceRecordKind.TOPOLOGY)
+        return decision.acknowledgement, topology_event
+
+    def _apply_unsupported_island_context(
+        self,
+        command: CommandV1,
+        topology_event: TopologyEventV1,
+    ) -> InterlockEventV1:
         previous_target = self.controller.engage_safe_zero_interlock()
         previous_applied, energy_before = self.active_model.force_safe_zero(
             OperatingMode.ISLANDED_UNSUPPORTED
@@ -303,6 +346,13 @@ class ReplayRuntime:
             causation_id=topology_event.id,
             topology_version=self.topology.topology_version,
         )
+        return interlock_event
+
+    def _evaluate_unsupported_island_alarm(
+        self,
+        command: CommandV1,
+        interlock_event: InterlockEventV1,
+    ) -> AlarmEventV1:
         balance = AlgebraicActivePowerBalance().calculate(
             logical_tick=command.apply_tick,
             load_mw=self.scenario.configuration.load_mw,
@@ -322,11 +372,11 @@ class ReplayRuntime:
         if len(alarm_events) != 1:
             raise AssertionError("reference PCC opening must create one alarm occurrence")
         self._append(alarm_events[0], TraceRecordKind.ALARM)
-        self.last_command_id = command.id
-        return topology_event, interlock_event, alarm_events[0]
+        return alarm_events[0]
 
-    def acknowledge_alarm(self, command: CommandV1) -> tuple[AcknowledgementV1, tuple[AlarmEventV1, ...]]:
-        self.run_until(command.apply_tick)
+    def _acknowledge_alarm(self, command: CommandV1) -> tuple[AcknowledgementV1, tuple[AlarmEventV1, ...]]:
+        if command.apply_tick != self.scheduler.current_tick:
+            raise ValueError("alarm commands execute only at the current macro boundary")
         occurrence_id = "" if self.alarm.state is None else self.alarm.state.occurrence_id
         decision = self.validator.validate_action_request(
             command,
@@ -353,14 +403,15 @@ class ReplayRuntime:
         self.last_command_id = command.id
         return decision.acknowledgement, events
 
-    def capture_command(
+    def _capture_command(
         self,
         command: CommandV1,
         *,
         snapshot_id: str,
         snapshot_encoder: SnapshotEncoder,
     ) -> tuple[AcknowledgementV1, bytes]:
-        self.run_until(command.apply_tick)
+        if command.apply_tick != self.scheduler.current_tick:
+            raise ValueError("snapshot commands execute only at the current macro boundary")
         decision = self.validator.validate_action_request(
             command,
             current_tick=command.apply_tick,
@@ -631,4 +682,8 @@ class FreshRuntimeDestination:
         return staged
 
 
-__all__ = ["FreshRuntimeDestination", "PowerMacroExecution", "ReplayRuntime"]
+__all__ = [
+    "FreshRuntimeDestination",
+    "ModelMacroExecution",
+    "ReplayRuntime",
+]
